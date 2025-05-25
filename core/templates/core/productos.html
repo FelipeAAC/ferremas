@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default:"Productos" }} - Ferremas</title>
+    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'core:index' %}">
+                <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{% url 'core:productos' %}">Productos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Carrito</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Login/Registro (API)</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content py-5 mt-4">
+        <div class="container">
+            <header class="text-center mb-5">
+                <h1 class="display-5 fw-bold">{{ page_title|default:"Nuestro Catálogo" }}</h1>
+                <p class="lead text-muted">Encuentra todo lo que necesitas para tus proyectos.</p>
+            </header>
+
+            {% if api_error_message %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>{{ api_error_message }}
+                </div>
+            {% endif %}
+
+            {% if categories_list %}
+                {% for category in categories_list %}
+                <section id="{{ category.id|slugify|default:category.name|slugify }}" class="mb-5">
+                    <h2 class="category-title display-6">{{ category.name }}</h2>
+                    
+                    {% if category.products %}
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                        {% for product in category.products %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm product-card">
+                                
+                                {% if product.imagen_url %}
+                                    {# Se asume que product.imagen_url es la ruta relativa como 'productos_imagenes/nombre.jpg' #}
+                                    {# y MEDIA_URL es '/media/' (configurado en settings.py y disponible gracias al context processor) #}
+                                    <img src="{{ MEDIA_URL }}{{ product.imagen_url }}" class="card-img-top product-card-img" alt="Imagen de {{ product.name }}">
+                                {% else %}
+                                    {# Muestra una imagen placeholder si no hay imagen_url definida para el producto #}
+                                    {# Asegúrate de tener esta imagen en: tu_app/static/core/images/placeholder.png #}
+                                    <img src="{% static 'core/images/placeholder.png' %}" class="card-img-top product-card-img" alt="Imagen no disponible">
+                                {% endif %}
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ product.name }}</h5>
+                                    {% if product.price is not None %}
+                                        <p class="card-text product-price mt-auto">
+                                            ${{ product.price|floatformat:"0" }} CLP
+                                        </p>
+                                    {% else %}
+                                        <p class="card-text text-muted mt-auto">Precio no disponible</p>
+                                    {% endif %}
+
+                                    {# Opcional: Enlace para que un admin pueda subir/cambiar la imagen #}
+                                    {% if user.is_staff %} {# Muestra esto solo si el usuario es staff (administrador) #}
+                                        <a href="{% url 'core:upload_product_image' product.id %}" class="btn btn-sm btn-outline-secondary product-manage-image-link mt-1 mb-2">
+                                            Gestionar Imagen <i class="fas fa-upload ms-1" aria-hidden="true"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    <a href="#" class="btn btn-sm btn-outline-primary product-details-link" data-product-id="{{ product.id }}"> {# Quité mt-2 si el botón de gestionar imagen está presente #}
+                                        Ver Detalles <i class="fas fa-search ms-1" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                        <p class="text-muted">No hay productos en esta categoría por el momento.</p>
+                    {% endif %}
+                </section>
+                {% endfor %}
+            {% elif not api_error_message %}
+                <div class="alert alert-info text-center" role="alert">
+                    <i class="fas fa-info-circle me-2" aria-hidden="true"></i>No hay categorías de productos para mostrar en este momento.
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <p class="mb-0">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'core/js/main.js' %}"></script>
+</body>
+</html>
