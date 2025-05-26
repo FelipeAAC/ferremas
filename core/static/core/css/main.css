@@ -75,3 +75,24 @@ body {
     border-top-left-radius: calc(0.375rem - 1px);
     border-top-right-radius: calc(0.375rem - 1px);
 }
+.product-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    margin-right: 1rem;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+}
+
+.quantity-controls .form-control {
+    width: 60px;
+    text-align: center;
+    margin: 0 0.5rem;
+}
+
+.quantity-controls .btn {
+    min-width: 30px;
+}

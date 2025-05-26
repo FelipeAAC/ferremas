@@ -12,31 +12,68 @@
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'core:index' %}">
-                <i class="fas fa-tools me-2"></i>Ferremas
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{% url 'core:index' %}">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:productos' %}">Productos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Carrito</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Login/Registro (API)</a>
-                    </li>
-                </ul>
-            </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'core:index' %}">
+            <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'core:productos' %}">Productos</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-shopping-cart"></i> Carrito
+                        <span class="badge bg-danger rounded-pill" id="cart-count-preview">3</span> {% comment %} Ejemplo, actualizar con JS {% endcomment %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="cartDropdown" style="min-width: 300px;">
+                        {% comment %}  Simulando items en el preview del carrito. Reemplazar con JS dinámico. {% endcomment %}
+                        <li id="cart-preview-empty" class="text-center p-2" style="display: none;">Tu carrito está vacío.</li>
+
+                        {% comment %} Ejemplo de Item 1 en preview {% endcomment %}
+                        <li class="mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="{% static 'core/images/placeholder.png' %}" alt="Prod" style="width: 50px; height: 50px; object-fit: cover;" class="me-2 rounded">
+                                <div>
+                                    <h6 class="mb-0 small">Taladro Percutor</h6>
+                                    <small class="text-muted">1 x $59.990</small>
+                                </div>
+                            </div>
+                        </li>
+                        {% comment %} Ejemplo de Item 2 en preview {% endcomment %}
+                         <li class="mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="{% static 'core/images/placeholder.png' %}" alt="Prod" style="width: 50px; height: 50px; object-fit: cover;" class="me-2 rounded">
+                                <div>
+                                    <h6 class="mb-0 small">Set Brocas</h6>
+                                    <small class="text-muted">2 x $22.950</small>
+                                </div>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Subtotal:</strong>
+                            <span>$105.890</span> {% comment %} Ejemplo, actualizar con JS {% endcomment %}
+                        </li>
+                        <li>
+                            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100">Ir a Pagar</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:login' %}">Login/Registro (API)</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                </li>
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
 
     <main class="main-content">
         <section class="hero-section">

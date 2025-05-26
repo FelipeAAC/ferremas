@@ -1,0 +1,263 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realizar Compra - Ferremas</title>
+    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'core:index' %}">
+                <i class="fas fa-tools me-2"></i>Ferremas
+            </a>
+             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:index' %}">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:productos' %}">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'core:carrito' %}"><i class="fas fa-shopping-cart"></i> Carrito <span class="badge bg-primary">3</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content py-5 mt-5">
+        <div class="container">
+            <header class="text-center mb-5">
+                <h1 class="display-5 fw-bold">Finalizar Compra</h1>
+            </header>
+
+            <div class="row g-5">
+                <div class="col-md-5 col-lg-4 order-md-last">
+                    <h4 class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-primary">Tu carrito</span>
+                        <span class="badge bg-primary rounded-pill">3</span>
+                    </h4>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Taladro Percutor</h6>
+                                <small class="text-muted">Cantidad: 1</small>
+                            </div>
+                            <span class="text-muted">$59.990</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Set de Brocas</h6>
+                                <small class="text-muted">Cantidad: 2</small>
+                            </div>
+                            <span class="text-muted">$45.900</span>
+                        </li>
+                         <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Huaipe Industrial</h6>
+                                <small class="text-muted">Cantidad: 1</small>
+                            </div>
+                            <span class="text-muted">$19.990</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between bg-light">
+                            <div class="text-success">
+                                <h6 class="my-0">Código de Descuento</h6>
+                                <small>EJEMPLOCODE</small>
+                            </div>
+                            <span class="text-success">−$5.000</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Subtotal</span>
+                            <strong>$120.880</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Despacho</span>
+                            <strong>$4.990</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="fw-bold">Total (CLP)</span>
+                            <strong class="h5">$125.870</strong>
+                        </li>
+                    </ul>
+
+                    <form class="card p-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Código de descuento">
+                            <button type="submit" class="btn btn-secondary">Aplicar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-md-7 col-lg-8">
+                    <h4 class="mb-3">Dirección de Envío</h4>
+                    <form class="needs-validation" novalidate method="post" action="{% url 'core:procesar_pago' %}"> {% comment %} Asegúrate que esta URL exista para el procesamiento {% endcomment %}
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label for="firstName" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" placeholder="" value="" required>
+                                <div class="invalid-feedback">
+                                    Se requiere un nombre válido.
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label for="lastName" class="form-label">Apellidos</label>
+                                <input type="text" class="form-control" id="lastName" name="lastName" placeholder="" value="" required>
+                                <div class="invalid-feedback">
+                                    Se requieren apellidos válidos.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="email" class="form-label">Correo Electrónico <span class="text-muted">(Opcional para seguimiento)</span></label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="tu@ejemplo.com">
+                            </div>
+
+                            <div class="col-12">
+                                <label for="address" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="address" name="address" placeholder="Av. Siempreviva 123" required>
+                                <div class="invalid-feedback">
+                                    Por favor, ingresa tu dirección de envío.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="address2" class="form-label">Departamento / Casa / Oficina <span class="text-muted">(Opcional)</span></label>
+                                <input type="text" class="form-control" id="address2" name="address2" placeholder="Depto. 101">
+                            </div>
+
+                            <div class="col-md-5">
+                                <label for="region" class="form-label">Región</label>
+                                <select class="form-select" id="region" name="region" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option>Metropolitana de Santiago</option>
+                                    {% comment %} ... más regiones ... {% endcomment %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Por favor, selecciona una región válida.
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="comuna" class="form-label">Comuna</label>
+                                <select class="form-select" id="comuna" name="comuna" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option>Puente Alto</option>
+                                    {% comment %} ... más comunas ... {% endcomment %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Por favor, selecciona una comuna válida.
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="zip" class="form-label">Código Postal <span class="text-muted">(Opcional)</span></label>
+                                <input type="text" class="form-control" id="zip" name="zip" placeholder="">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h4 class="mb-3">Método de Pago</h4>
+
+                        <div id="paypal-button-container" class="my-3">
+                            {% comment %} El botón de PayPal se renderizará aquí por el SDK de PayPal {% endcomment %}
+                            <p class="text-center">Cargando opciones de pago...</p>
+                        </div>
+                        
+                        <p class="text-muted text-center small">Serás redirigido a PayPal para completar tu pago de forma segura.</p>
+                        {% comment %} O puedes agregar otros métodos de pago aquí {% endcomment %}
+                        
+                        <hr class="my-4">
+
+                        <button class="w-100 btn btn-primary btn-lg" type="submit" id="submit-order-button" style="display: none;"> {% comment %} Este botón podría ser activado por PayPal SDK o usarse si no hay PayPal {% endcomment %}
+                            Confirmar y Pagar (Alternativo)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <p class="mb-0">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+    {% comment %} Aquí deberías incluir el SDK de PayPal si lo vas a usar {% endcomment %}
+    {% comment %} <script src="https://www.paypal.com/sdk/js?client-id=TU_CLIENT_ID_DE_PAYPAL&currency=CLP"></script> {% endcomment %}
+    <script>
+        // Ejemplo básico de validación de Bootstrap
+        (function () {
+          'use strict'
+          var forms = document.querySelectorAll('.needs-validation')
+          Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+              form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                  event.preventDefault()
+                  event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+              }, false)
+            })
+        })();
+
+        // Lógica para PayPal (ejemplo conceptual)
+        // if (typeof paypal !== 'undefined') {
+        //     paypal.Buttons({
+        //         createOrder: function(data, actions) {
+        //             // Lógica para crear la orden en tu backend y retornar el ID de la orden de PayPal
+        //             return fetch('/api/paypal/create_order/', { // URL de tu backend
+        //                 method: 'post',
+        //                 headers: {
+        //                     'content-type': 'application/json',
+        //                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        //                 },
+        //                 body: JSON.stringify({
+        //                     // Aquí puedes enviar el desglose del carrito o el total
+        //                     // para que tu backend cree la orden con PayPal
+        //                 })
+        //             }).then(function(res) {
+        //                 return res.json();
+        //             }).then(function(orderData) {
+        //                 return orderData.id; // ID de la orden de PayPal
+        //             });
+        //         },
+        //         onApprove: function(data, actions) {
+        //             // Lógica para capturar la orden en tu backend después de la aprobación del usuario
+        //             return fetch('/api/paypal/capture_order/', { // URL de tu backend
+        //                 method: 'post',
+        //                 headers: {
+        //                     'content-type': 'application/json',
+        //                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        //                 },
+        //                 body: JSON.stringify({
+        //                     orderID: data.orderID
+        //                 })
+        //             }).then(function(res) {
+        //                 return res.json();
+        //             }).then(function(orderData) {
+        //                 // Redirigir a la página de compra exitosa o mostrar mensaje
+        //                 window.location.href = "{% url 'core:compra_exitosa' %}"; // Asegúrate que esta URL exista
+        //             });
+        //         },
+        //         onError: function(err) {
+        //             console.error("Error con PayPal:", err);
+        //             // Mostrar un mensaje de error al usuario
+        //             alert("Ha ocurrido un error con el pago. Por favor, inténtalo de nuevo.");
+        //         }
+        //     }).render('#paypal-button-container');
+        // } else {
+        //     document.getElementById('paypal-button-container').innerHTML = '<p class="text-danger">Error al cargar el método de pago. Intente más tarde.</p>';
+        // }
+    </script>
+</body>
+</html>

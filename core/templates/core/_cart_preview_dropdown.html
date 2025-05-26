@@ -1,0 +1,48 @@
+{% load static %}
+{% load humanize %} {% comment %} Necesitarás 'django.contrib.humanize' en INSTALLED_APPS y {% load humanize %} {% endcomment %}
+
+<ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown" style="min-width: 350px; max-height: 400px; overflow-y: auto;" id="cart-preview-container">
+    {% if items_carrito_preview %}
+        {% for item in items_carrito_preview %}
+            <li class="cart-preview-item mb-2" data-item-id="{{ item.api_id }}">
+                <div class="d-flex align-items-center">
+                    <img src="{% if item.imagen_url %}{{ MEDIA_URL }}{{ item.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}"
+                         alt="{{ item.nombre }}"
+                         style="width: 50px; height: 50px; object-fit: cover;"
+                         class="me-2 rounded">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 small item-name">{{ item.nombre|truncatechars:30 }}</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted item-quantity-price">
+                                <span class="item-quantity">{{ item.cantidad }}</span> x ${{ item.precio_unitario|floatformat:"0"|intcomma }}
+                            </small>
+                            <small class="text-muted fw-bold item-subtotal">${{ item.precio_total|floatformat:"0"|intcomma }}</small>
+                        </div>
+                    </div>
+                    <div class="ms-2 text-nowrap">
+                        <button class="btn btn-sm btn-outline-secondary cart-preview-decrease" data-item-id="{{ item.api_id }}" data-action="decrease" type="button">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary cart-preview-increase" data-item-id="{{ item.api_id }}" data-action="increase" type="button">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger cart-preview-remove ms-1" data-item-id="{{ item.api_id }}" data-action="remove" type="button">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+        <li><hr class="dropdown-divider"></li>
+        <li class="d-flex justify-content-between align-items-center mb-2">
+            <strong>Subtotal:</strong>
+            <span id="cart-preview-subtotal">${{ total_carrito_preview|floatformat:"0"|intcomma }}</span>
+        </li>
+        <li>
+            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito Completo</a>
+            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100 {% if not items_carrito_preview %}disabled{% endif %}">Ir a Pagar</a>
+        </li>
+    {% else %}
+        <li id="cart-preview-empty" class="text-center p-2">Tu carrito está vacío.</li>
+    {% endif %}
+</ul>
