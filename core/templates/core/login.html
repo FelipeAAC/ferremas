@@ -52,7 +52,7 @@
                                     {{ error_message }}
                                 </div>
                             {% endif %}
-                            <form method="post" action="{% url 'core:login' %}"> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                            <form method="post" action="{% url 'core:login' %}">
                                 {% csrf_token %}
                                 <div class="mb-3">
                                     <label for="username" class="form-label">Correo Electrónico / Usuario</label>
@@ -72,7 +72,7 @@
                             <hr>
                             <div class="text-center">
                                 <p class="mb-0">¿No tienes una cuenta?</p>
-                                <a href="{% url 'core:registro' %}" class="btn btn-outline-secondary mt-2"> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                                <a href="{% url 'core:registro' %}" class="btn btn-outline-secondary mt-2">
                                     Regístrate aquí
                                 </a>
                             </div>

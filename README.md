@@ -21,7 +21,7 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local:
 1.  **Clonar el Repositorio:**
 
     ```bash
-    git clone <URL_DEL_REPOSITORIO_AQUI>
+    git clone https://github.com/FelipeAAC/ferremas
     cd ferremas
     ```
     Si ya tienes los archivos, simplemente navega a la carpeta raíz del proyecto `ferremas` (donde se encuentra el archivo `manage.py`).
@@ -61,8 +61,8 @@ Una vez completada la instalación y configuración:
 
 1.  **Iniciar el Servidor de Desarrollo Django:**
     ```bash
-    python manage.py createsuperuser
-    Admin Admin
+    ## GitBash
+    source venv/Scripts/activate
     python manage.py migrate
     python manage.py runserver
     ```
