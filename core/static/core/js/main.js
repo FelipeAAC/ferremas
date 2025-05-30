@@ -2,16 +2,20 @@
 
 // URL base para la API de Autenticación (registro, login, /users/me)
 const API_AUTH_BASE_URL =
-    typeof API_AUTH_URL_FROM_DJANGO !== "undefined" && API_AUTH_URL_FROM_DJANGO
+    (typeof API_AUTH_URL_FROM_DJANGO !== "undefined" && API_AUTH_URL_FROM_DJANGO)
         ? API_AUTH_URL_FROM_DJANGO
         : "http://127.0.0.1:8002";
 
 // URL base para la API CRUD (productos, categorías, pedidos del cliente, etc.)
-// Intenta tomar la URL de la variable global definida por Django, sino usa el fallback.
 const API_CRUD_BASE_URL = 
-    typeof API_CRUD_URL_FROM_DJANGO !== 'undefined' && API_CRUD_URL_FROM_DJANGO
+    (typeof API_CRUD_URL_FROM_DJANGO !== 'undefined' && API_CRUD_URL_FROM_DJANGO)
         ? API_CRUD_URL_FROM_DJANGO 
         : "http://127.0.0.1:8001"; 
+
+// Definir MEDIA_URL globalmente si tus imágenes de producto en pedidos la necesitan
+// Asegúrate que esta ruta sea correcta si tu API CRUD sirve los archivos directamente
+// desde una subcarpeta 'media'. Si la API devuelve URLs completas, esto no es necesario.
+const MEDIA_URL = "/media/"; // Ajusta si es diferente, ej. API_CRUD_BASE_URL + "/media/"
 
 document.addEventListener("DOMContentLoaded", function () {
     const userGreetingElement = document.getElementById('user-greeting');
@@ -19,11 +23,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const registerLink = document.getElementById('register-link');
     const logoutLink = document.getElementById('logout-link');
     const profileLink = document.getElementById('profile-link');
-    
     const cartCountBadge = document.getElementById('cart-count-badge');
-    // Los elementos del preview del carrito se obtendrán dentro de renderCartPreview
 
-    // --- Definición de logoutUser ANTES de fetchUserProfile ---
     function logoutUser() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('token_type');
@@ -35,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (window.location.pathname !== "/" && !window.location.pathname.includes('/login/')) {
              window.location.href = '/';
         } else if (window.location.pathname.includes('/login/')) {
-            // No hacer nada si ya está en la página de login
+            // No hacer nada
         } else { 
             window.location.reload();
         }
@@ -59,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function fetchUserProfile(token) {
+        console.log("fetchUserProfile llamado con token.");
         try {
             const response = await fetch(`${API_AUTH_BASE_URL}/users/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -71,12 +73,14 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             const userData = await response.json();
+            console.log("Datos del usuario recibidos:", userData);
 
             if (userGreetingElement) {
                 userGreetingElement.textContent = `Hola, ${userData.p_nombre || userData.correo}!`;
             }
 
             if (window.location.pathname.includes("/perfil/")) {
+                console.log("Actualizando campos del perfil...");
                 const profileWelcome = document.getElementById("profile-welcome-name");
                 const profileIdCliente = document.getElementById("profile-id_cliente");
                 const profilePNombre = document.getElementById("profile-p_nombre");
@@ -86,18 +90,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 const profileCorreo = document.getElementById("profile-correo");
                 const profileTelefono = document.getElementById("profile-telefono");
                 
-                if (profileWelcome) profileWelcome.textContent = userData.p_nombre || "Usuario";
-                if (profileIdCliente) profileIdCliente.textContent = userData.id_cliente || 'N/A';
-                if (profilePNombre) profilePNombre.textContent = userData.p_nombre || "No especificado";
-                if (profileSNombre) profileSNombre.textContent = userData.s_nombre || "";
-                if (profilePApellido) profilePApellido.textContent = userData.p_apellido || "No especificado";
-                if (profileSApellido) profileSApellido.textContent = userData.s_apellido || "";
-                if (profileCorreo) profileCorreo.textContent = userData.correo || "No especificado";
-                if (profileTelefono) profileTelefono.textContent = userData.telefono || "No especificado";
+                if (profileWelcome) profileWelcome.textContent = userData.p_nombre || "Usuario"; else console.warn("Elemento profile-welcome-name no encontrado");
+                if (profileIdCliente) profileIdCliente.textContent = userData.id_cliente || 'N/A'; else console.warn("Elemento profile-id_cliente no encontrado");
+                
+                if (profilePNombre) profilePNombre.value = userData.p_nombre || "No especificado"; else console.warn("Elemento profile-p_nombre no encontrado");
+                if (profileSNombre) profileSNombre.value = userData.s_nombre || ""; else console.warn("Elemento profile-s_nombre no encontrado");
+                if (profilePApellido) profilePApellido.value = userData.p_apellido || "No especificado"; else console.warn("Elemento profile-p_apellido no encontrado");
+                if (profileSApellido) profileSApellido.value = userData.s_apellido || ""; else console.warn("Elemento profile-s_apellido no encontrado");
+                if (profileCorreo) profileCorreo.value = userData.correo || "No especificado"; else console.warn("Elemento profile-correo no encontrado");
+                if (profileTelefono) profileTelefono.value = userData.telefono || "No especificado"; else console.warn("Elemento profile-telefono no encontrado");
                 
                 if (userData.id_cliente) {
+                    console.log("Llamando a fetchUserOrders con id_cliente:", userData.id_cliente);
                     fetchUserOrders(userData.id_cliente); 
                 } else {
+                    console.warn("No se encontró id_cliente en userData para cargar pedidos.");
                     const pedidosEnCursoContainer = document.getElementById('pedidos-en-curso-container');
                     const historialPedidosContainer = document.getElementById('historial-pedidos-container');
                     if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = '<p class="text-muted">No se pudo cargar el ID del cliente para ver los pedidos.</p>';
@@ -116,45 +123,62 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function fetchUserOrders(idCliente) {
+        console.log(`fetchUserOrders llamado para cliente ID: ${idCliente}`);
         const pedidosEnCursoContainer = document.getElementById('pedidos-en-curso-container');
         const historialPedidosContainer = document.getElementById('historial-pedidos-container');
         const noPedidosEnCursoMsg = document.getElementById('no-pedidos-en-curso');
         const noHistorialPedidosMsg = document.getElementById('no-historial-pedidos');
 
         if (!pedidosEnCursoContainer || !historialPedidosContainer || !noPedidosEnCursoMsg || !noHistorialPedidosMsg) {
-            console.warn("Contenedores de pedidos no encontrados en la página de perfil.");
+            console.warn("Contenedores de pedidos no encontrados en la página de perfil. No se pueden mostrar los pedidos.");
             return;
         }
 
         noPedidosEnCursoMsg.style.display = 'none';
         noHistorialPedidosMsg.style.display = 'none';
-        pedidosEnCursoContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div> Cargando pedidos en curso...</div>';
-        historialPedidosContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div> Cargando historial...</div>';
+        pedidosEnCursoContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2">Cargando pedidos en curso...</p></div>';
+        historialPedidosContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2">Cargando historial de pedidos...</p></div>';
 
         try {
-            const effectiveCrudUrl = API_CRUD_BASE_URL; // Usar la constante global directamente o la que viene de Django
+            const effectiveCrudUrl = API_CRUD_BASE_URL;
+            const url = `${effectiveCrudUrl}/clientes/${idCliente}/pedidos`;
+            console.log("Intentando obtener pedidos desde:", url);
 
-            const response = await fetch(`${effectiveCrudUrl}/clientes/${idCliente}/pedidos`, {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`, 
                     'Content-Type': 'application/json'
                 }
             });
+            
+            console.log("Respuesta de API Pedidos - Status:", response.status);
+            const responseText = await response.text(); // Leer como texto primero para depurar
+            console.log("Respuesta de API Pedidos - Texto:", responseText);
+
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({detail: "Error desconocido al cargar pedidos."}));
-                throw new Error(`Error ${response.status}: ${errorData.detail}`);
+                let errorDetail = "Error desconocido al cargar pedidos.";
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorDetail = errorData.detail || errorDetail;
+                } catch (e) {
+                    // No hacer nada si no es JSON, usar el texto de respuesta
+                    errorDetail = responseText || errorDetail;
+                }
+                throw new Error(`Error ${response.status}: ${errorDetail}`);
             }
 
-            const pedidos = await response.json();
+            const pedidos = JSON.parse(responseText); // Parsear a JSON ahora que sabemos que es ok
+            console.log("Pedidos recibidos:", pedidos);
             
             pedidosEnCursoContainer.innerHTML = ''; 
             historialPedidosContainer.innerHTML = ''; 
             let hayPedidosEnCurso = false;
             let hayPedidosEnHistorial = false;
 
-            if (pedidos.length === 0) {
+            if (!pedidos || pedidos.length === 0) {
+                console.log("No se encontraron pedidos para el cliente.");
                 if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block';
                 if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block';
                 return;
@@ -164,32 +188,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
             pedidos.forEach(pedido => {
                 const esPedidoEnCurso = estadosEnCursoIDs.includes(pedido.id_estado_pedido);
-                const fechaPedidoFormateada = pedido.fecha_pedido ? new Date(pedido.fecha_pedido).toLocaleDateString('es-CL') : 'Fecha no disponible';
-                const totalPedidoFormateado = (pedido.total_pedido || 0).toLocaleString('es-CL');
+                const fechaPedidoFormateada = pedido.fecha_pedido ? new Date(pedido.fecha_pedido).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible';
+                const totalPedidoFormateado = (parseFloat(pedido.total_pedido) || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
                 const estadoDescripcion = pedido.estado_descripcion || 'Estado desconocido';
-                const MEDIA_URL_PREFIX = "/media/"; // Definir prefijo para media si no viene en la URL del producto
 
                 const detallesHTML = pedido.detalles && pedido.detalles.length > 0 ?
                     pedido.detalles.map(detalle => {
-                        let imagenSrc = '/static/core/images/placeholder.png'; // Placeholder por defecto
+                        let imagenSrc = '/static/core/images/placeholder.png'; 
                         if (detalle.imagen_url) {
-                            // Asumir que imagen_url es relativa a MEDIA_ROOT, ej: "productos_imagenes/nombre.jpg"
-                            // Y que la API CRUD sirve los archivos desde /media/ en su raíz.
-                            // Si la API CRUD ya devuelve la URL completa, esta lógica de prefijo no es necesaria.
-                            imagenSrc = detalle.imagen_url.startsWith('http') ? detalle.imagen_url : API_CRUD_BASE_URL + MEDIA_URL_PREFIX + detalle.imagen_url;
+                            // Si la URL ya es completa (http...) la usa, sino, la construye.
+                            imagenSrc = detalle.imagen_url.startsWith('http') ? detalle.imagen_url : (effectiveCrudUrl.endsWith('/') ? effectiveCrudUrl.slice(0,-1) : effectiveCrudUrl) + MEDIA_URL + detalle.imagen_url;
                         }
                         return `
                         <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 border-bottom">
                             <div class="d-flex align-items-center">
                                 <img src="${imagenSrc}" 
-                                     alt="${detalle.nombre_producto}" class="order-item-img"
+                                     alt="${detalle.nombre_producto || 'Producto'}" class="order-item-img"
                                      onerror="this.onerror=null;this.src='/static/core/images/placeholder.png';">
                                 <div>
-                                    <small class="fw-semibold d-block text-truncate" style="max-width: 200px;" title="${detalle.nombre_producto}">${detalle.nombre_producto}</small>
-                                    <small class="text-muted">Cant: ${detalle.cantidad} x $${(detalle.precio_unitario_venta || 0).toLocaleString('es-CL')}</small>
+                                    <small class="fw-semibold d-block text-truncate" style="max-width: 200px;" title="${detalle.nombre_producto || ''}">${detalle.nombre_producto || 'Nombre no disponible'}</small>
+                                    <small class="text-muted">Cant: ${detalle.cantidad} x $${(parseFloat(detalle.precio_unitario_venta) || 0).toLocaleString('es-CL')}</small>
                                 </div>
                             </div>
-                            <small class="text-muted fw-semibold">$${(detalle.subtotal || 0).toLocaleString('es-CL')}</small>
+                            <small class="text-muted fw-semibold">$${(parseFloat(detalle.subtotal) || 0).toLocaleString('es-CL')}</small>
                         </li>
                     `}).join('') : '<li class="list-group-item px-0 text-muted small">No hay detalles para este pedido.</li>';
 
@@ -200,24 +221,24 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <strong class="me-2">Pedido #${pedido.id_pedido}</strong>
                                 <small class="text-muted">Fecha: ${fechaPedidoFormateada}</small>
                             </div>
-                            <span class="badge bg-${esPedidoEnCurso ? 'info text-dark' : 'secondary'}">${estadoDescripcion}</span>
+                            <span class="badge bg-${esPedidoEnCurso ? 'info text-dark' : 'success'}">${estadoDescripcion}</span>
                         </div>
                         <div class="card-body">
                             <ul class="list-group list-group-flush mb-2">
                                 ${detallesHTML}
                             </ul>
                             <div class="text-end fw-bold mt-2 fs-5">
-                                Total Pedido: $${totalPedidoFormateado}
+                                Total Pedido: ${totalPedidoFormateado}
                             </div>
                         </div>
                     </div>
                 `;
 
                 if (esPedidoEnCurso) {
-                    pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
+                    if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
                     hayPedidosEnCurso = true;
                 } else {
-                    historialPedidosContainer.innerHTML += pedidoCardHTML;
+                    if(historialPedidosContainer) historialPedidosContainer.innerHTML += pedidoCardHTML;
                     hayPedidosEnHistorial = true;
                 }
             });
@@ -229,15 +250,16 @@ document.addEventListener("DOMContentLoaded", function () {
             else { if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block'; }
 
         } catch (error) {
-            console.error("Error al obtener los pedidos del cliente:", error);
-            const errorMsg = `<div class="alert alert-warning">No se pudo cargar el historial de pedidos: ${error.message}</div>`;
+            console.error("Error al procesar los pedidos del cliente:", error);
+            const errorMsg = `<div class="alert alert-warning">No se pudo cargar el historial de pedidos: ${error.message || 'Error desconocido.'}</div>`;
             if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = errorMsg;
-            if(historialPedidosContainer) historialPedidosContainer.innerHTML = errorMsg;
+            if(historialPedidosContainer) historialPedidosContainer.innerHTML = errorMsg; 
             if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none';
             if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none';
         }
     }
     
+    // --- Event Listener para Logout (movido después de la definición de logoutUser) ---
     if (logoutLink) {
         logoutLink.addEventListener('click', function(event) {
             event.preventDefault();
@@ -245,8 +267,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
+    // --- Lógica de Formularios (Registro y Login) ---
     const registerForm = document.getElementById("registerForm");
     if (registerForm) {
+        // ... (tu código de registerForm sin cambios)
         registerForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             const apiMessageDiv = document.getElementById("api-message");
@@ -287,6 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
+        // ... (tu código de loginForm sin cambios, ya usa API_AUTH_BASE_URL)
         loginForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             const apiMessageDiv = document.getElementById("api-message");
@@ -326,6 +351,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // --- Lógica del Carrito de Compras (como la tenías) ---
     function getCart() { return JSON.parse(localStorage.getItem("shoppingCart")) || []; }
     function saveCart(cart) { 
         localStorage.setItem("shoppingCart", JSON.stringify(cart));
@@ -358,7 +384,7 @@ document.addEventListener("DOMContentLoaded", function () {
         saveCart(cart);
     }
 
-    function renderCartPage() { 
+    function renderCartPage() { /* ... (tu función renderCartPage) ... */ 
         const cartItemsContainer = document.getElementById("cart-items");
         const cartSubtotalSpan = document.getElementById("cart-subtotal");
         const cartTotalSpan = document.getElementById("cart-total");
@@ -420,7 +446,7 @@ document.addEventListener("DOMContentLoaded", function () {
             input.addEventListener("change", function () { updateCartItemQuantity(this.dataset.productId, this.value); });
         });
     }
-    function updateCartCount() { 
+    function updateCartCount() { /* ... (tu función updateCartCount) ... */ 
         if (cartCountBadge) {
             const cart = getCart();
             const totalItems = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
@@ -428,7 +454,7 @@ document.addEventListener("DOMContentLoaded", function () {
             cartCountBadge.style.display = totalItems > 0 ? "inline-block" : "none";
         }
     }
-    function renderCartPreview() { 
+    function renderCartPreview() { /* ... (tu función renderCartPreview con botones +/-/eliminar) ... */ 
         const currentCartPreviewItemsListEl = document.getElementById('cart-preview-items-scrollable');
         const currentCartPreviewEmptyMessageEl = document.getElementById('cart-preview-empty');
         const currentCartPreviewSubtotalSpanEl = document.getElementById('cart-preview-subtotal');

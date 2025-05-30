@@ -16,20 +16,59 @@
         .footer { background-color: #343a40; color: white; padding: 2rem 0; text-align: center; flex-shrink: 0; }
         .footer a { color: #adb5bd; } .footer a:hover { color: #ffffff; }
         .navbar-brand i.fa-tools { color: #ffc107; }
+
         .cart-preview-item-image { width: 50px; height: 50px; object-fit: cover; margin-right: 0.75rem; border-radius: 0.25rem; border: 1px solid #eee; }
         .dropdown-menu-end[aria-labelledby="cartDropdown"] { min-width: 350px !important; max-height: 450px; }
         #cart-preview-items-scrollable { max-height: 300px; overflow-y: auto; }
         .cart-preview-item .btn-sm { padding: 0.15rem 0.4rem; font-size: 0.75rem; line-height: 1.2; }
         .cart-preview-item .item-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.2em; max-height: 2.4em;}
         .alert-container { min-height: 50px; }
-        .profile-card .card-header { font-size: 1.5rem; }
-        .profile-card dt { font-weight: 600; color: #495057; padding-top: 0.5rem; }
-        .profile-card dd { color: #212529; word-break: break-word; padding-top: 0.5rem; margin-bottom: 0.5rem; }
-        .profile-card hr.my-2 { border-top: 1px solid rgba(0,0,0,.08); }
+        
+        .profile-header {
+            background-color: var(--bs-primary);
+            color: white;
+            padding: 1.5rem;
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+        }
+        .profile-avatar-section {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            background-color: #e9ecef; /* Color de fondo para el placeholder */
+        }
+        .profile-avatar-placeholder-icon {
+            font-size: 4rem;
+            color: #adb5bd;
+        }
+        .profile-card .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+        }
+        .profile-card .form-control[readonly] { /* Para campos que no son editables */
+            background-color: #e9ecef;
+            opacity: 1;
+            cursor: default;
+        }
+        .profile-card .form-control:not([readonly]) {
+            background-color: #fff;
+        }
         .order-card { margin-bottom: 1.5rem; border: 1px solid #dee2e6; }
         .order-card .card-header { background-color: #f8f9fa; font-weight: 500; }
         .order-item-img { width: 45px; height: 45px; object-fit: cover; border-radius: .25rem; margin-right: 10px; border: 1px solid #eee; }
         .section-divider { margin-top: 2.5rem; margin-bottom: 2.5rem; }
+        .btn-edit-field {
+            font-size: 0.8em;
+            padding: 0.2em 0.5em;
+        }
     </style>
 </head>
 <body class="d-flex flex-column">
@@ -87,34 +126,67 @@
             <div class="row justify-content-center">
                 <div class="col-lg-10 col-xl-9">
                     <div class="card shadow-sm profile-card mb-5">
-                        <div class="card-header bg-primary text-white d-flex align-items-center">
-                            <i class="fas fa-user-circle fa-2x me-3"></i>
-                            <h2 class="mb-0 h4">Mis Datos - <span id="profile-welcome-name">Cargando...</span></h2>
+                        <div class="profile-header d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-3x me-3"></i>
+                            <div>
+                                <h2 class="mb-0 h4">Mis Datos</h2>
+                                <span id="profile-welcome-name" class="small">Cargando nombre...</span>
+                            </div>
                         </div>
                         <div class="card-body p-4" id="profile-details-container">
                             <div id="api-message-profile" class="alert-container mb-3"></div>
-                            <dl class="row">
-                                <dt class="col-sm-4 col-md-3">ID Cliente:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-id_cliente">Cargando...</dd>
-                                <div class="col-12"><hr class="my-2"></div>
-                                <dt class="col-sm-4 col-md-3">Primer Nombre:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-p_nombre">Cargando...</dd>
-                                <dt class="col-sm-4 col-md-3">Segundo Nombre:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-s_nombre">Cargando...</dd>
-                                <div class="col-12"><hr class="my-2"></div>
-                                <dt class="col-sm-4 col-md-3">Primer Apellido:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-p_apellido">Cargando...</dd>
-                                <dt class="col-sm-4 col-md-3">Segundo Apellido:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-s_apellido">Cargando...</dd>
-                                <div class="col-12"><hr class="my-2"></div>
-                                <dt class="col-sm-4 col-md-3">Correo Electrónico:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-correo">Cargando...</dd>
-                                <dt class="col-sm-4 col-md-3">Teléfono:</dt>
-                                <dd class="col-sm-8 col-md-9" id="profile-telefono">Cargando...</dd>
-                            </dl>
-                        </div>
-                        <div class="card-footer text-muted text-center">
-                            <small>Si necesitas actualizar tu información personal, por favor contacta a soporte.</small>
+
+                            <div class="profile-avatar-section">
+                                <img src="{% static 'core/images/avatar_placeholder.png' %}" alt="Avatar de Usuario" id="profile-avatar-img" class="profile-avatar">
+                                <div class="mt-2">
+                                    <input type="file" id="profile-avatar-input" accept="image/*" style="display: none;">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('profile-avatar-input').click();">
+                                        <i class="fas fa-camera me-1"></i>Cambiar Imagen
+                                    </button>
+                                </div>
+                            </div>
+                            <hr>
+                            <form id="profile-update-form"> {% comment %} Formulario para campos editables {% endcomment %}
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profile-p_nombre" class="form-label">Primer Nombre</label>
+                                        <input type="text" class="form-control" id="profile-p_nombre" value="Cargando..." readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="profile-s_nombre" class="form-label">Segundo Nombre</label>
+                                        <input type="text" class="form-control" id="profile-s_nombre" value="Cargando..." readonly>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profile-p_apellido" class="form-label">Primer Apellido</label>
+                                        <input type="text" class="form-control" id="profile-p_apellido" value="Cargando..." readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="profile-s_apellido" class="form-label">Segundo Apellido</label>
+                                        <input type="text" class="form-control" id="profile-s_apellido" value="Cargando..." readonly>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profile-correo" class="form-label">Correo Electrónico</label>
+                                        <div class="input-group">
+                                            <input type="email" class="form-control" id="profile-correo" value="Cargando..." readonly>
+                                            <button class="btn btn-outline-secondary btn-edit-field" type="button" data-field="profile-correo" title="Editar Correo"><i class="fas fa-pencil-alt"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="profile-telefono" class="form-label">Teléfono</label>
+                                        <div class="input-group">
+                                            <input type="tel" class="form-control" id="profile-telefono" value="Cargando..." readonly>
+                                            <button class="btn btn-outline-secondary btn-edit-field" type="button" data-field="profile-telefono" title="Editar Teléfono"><i class="fas fa-pencil-alt"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3" id="profile-save-button-container" style="display: none;">
+                                    <button type="button" class="btn btn-primary" id="profile-save-changes">Guardar Cambios</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -152,11 +224,70 @@
             </p>
         </div>
     </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}"; 
         const API_CRUD_URL_FROM_DJANGO = "{{ api_crud_url_js|default:''|escapejs }}";
     </script>
     <script src="{% static 'core/js/main.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const avatarImg = document.getElementById('profile-avatar-img');
+            const avatarInput = document.getElementById('profile-avatar-input');
+            const profileSaveButtonContainer = document.getElementById('profile-save-button-container');
+            const profileSaveChangesBtn = document.getElementById('profile-save-changes');
+
+            if (avatarInput && avatarImg) {
+                avatarInput.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            avatarImg.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                        if (profileSaveButtonContainer) profileSaveButtonContainer.style.display = 'block';
+                    }
+                });
+            }
+
+            const editButtons = document.querySelectorAll('.btn-edit-field');
+            editButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const fieldId = this.dataset.field;
+                    const inputField = document.getElementById(fieldId);
+                    if (inputField) {
+                        inputField.readOnly = !inputField.readOnly;
+                        if (!inputField.readOnly) {
+                            inputField.focus();
+                            if (profileSaveButtonContainer) profileSaveButtonContainer.style.display = 'block';
+                        }
+                        this.innerHTML = inputField.readOnly ? '<i class="fas fa-pencil-alt"></i>' : '<i class="fas fa-times"></i>';
+                        this.title = inputField.readOnly ? `Editar ${inputField.previousElementSibling.textContent}` : 'Cancelar Edición';
+                    }
+                });
+            });
+
+            if (profileSaveChangesBtn) {
+                profileSaveChangesBtn.addEventListener('click', function() {
+                    const correoField = document.getElementById('profile-correo');
+                    const telefonoField = document.getElementById('profile-telefono');
+                    
+                    showToast("Cambios guardados (simulación).", false); // Necesitas la función showToast en main.js
+
+                    if (correoField) correoField.readOnly = true;
+                    if (telefonoField) telefonoField.readOnly = true;
+                    
+                    document.querySelectorAll('.btn-edit-field').forEach(btn => {
+                        btn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+                        btn.title = `Editar ${btn.previousElementSibling.textContent}`;
+                    });
+                    if (profileSaveButtonContainer) profileSaveButtonContainer.style.display = 'none';
+                    
+                });
+            }
+        });
+    </script>
 </body>
 </html>
