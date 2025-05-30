@@ -30,46 +30,31 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-shopping-cart"></i> Carrito
-                        <span class="badge bg-danger rounded-pill" id="cart-count-preview">3</span> {% comment %} Ejemplo, actualizar con JS {% endcomment %}
+                        <span class="badge bg-danger rounded-pill cart-count-badge" id="cart-count-badge">0</span> {# El ID es importante para JS #}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="cartDropdown" style="min-width: 300px;">
-                        {% comment %}  Simulando items en el preview del carrito. Reemplazar con JS dinámico. {% endcomment %}
-                        <li id="cart-preview-empty" class="text-center p-2" style="display: none;">Tu carrito está vacío.</li>
+                        <li id="cart-preview-empty" class="text-center p-2">Tu carrito está vacío.</li>
 
-                        {% comment %} Ejemplo de Item 1 en preview {% endcomment %}
-                        <li class="mb-2">
-                            <div class="d-flex align-items-center">
-                                <img src="{% static 'core/images/placeholder.png' %}" alt="Prod" style="width: 50px; height: 50px; object-fit: cover;" class="me-2 rounded">
-                                <div>
-                                    <h6 class="mb-0 small">Taladro Percutor</h6>
-                                    <small class="text-muted">1 x $59.990</small>
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger ms-2"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </li>
-                        {% comment %} Ejemplo de Item 2 en preview {% endcomment %}
-                         <li class="mb-2">
-                            <div class="d-flex align-items-center">
-                                <img src="{% static 'core/images/placeholder.png' %}" alt="Prod" style="width: 50px; height: 50px; object-fit: cover;" class="me-2 rounded">
-                                <div>
-                                    <h6 class="mb-0 small">Set Brocas</h6>
-                                    <small class="text-muted">2 x $22.950</small>
-                                </div>
-                            </div>
-                        </li>
+                        <div id="cart-preview-items">
+                        </div>
+                        
                         <li><hr class="dropdown-divider"></li>
-                        <li class="d-flex justify-content-between align-items-center mb-2">
+                        <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
                             <strong>Subtotal:</strong>
-                            <span>$105.890</span>{% comment %} Ejemplo, actualizar con JS {% endcomment %}
+                            <span id="cart-preview-subtotal">$0.00</span> {# ID para el subtotal #}
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
+                            <strong>Total:</strong>
+                            <span id="cart-preview-total">$0.00</span>
                         </li>
                         <li>
-                            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
-                            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100">Ir a Pagar</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito</a>
+                            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100">Ir a Pagar</a>
                         </li>
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'core:login' %}">Login/Registro (API)</a> {% comment %} Asegúrate que esta URL exista {% endcomment %}
+                    <a class="nav-link" href="{% url 'core:login' %}">Login/Registro (API)</a>
                 </li>
             </ul>
         </div>

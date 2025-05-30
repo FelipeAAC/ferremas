@@ -1,207 +1,147 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Registro - Ferremas</title>
-    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'core/css/main.css' %}" rel="stylesheet" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default:"Registro de Usuario" }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'core/css/main.css' %}">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 70px; /* Ajuste para el navbar fijo un poco más alto */
+            background-color: #f8f9fa; /* Un fondo ligeramente gris para la página */
+        }
+        .auth-container {
+            max-width: 700px; /* Aumentamos el ancho para el layout de dos columnas */
+            margin-top: 2rem;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: auto;
+        }
+        .footer a {
+            color: #adb5bd;
+        }
+        .footer a:hover {
+            color: #ffffff;
+        }
+        .navbar-brand i {
+            color: #ffc107;
+        }
+        .alert-container {
+            min-height: 50px; /* Para evitar saltos cuando aparecen mensajes */
+        }
+    </style>
+</head>
+<body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-      <div class="container">
-        <a class="navbar-brand" href="{% url 'core:index' %}">
-          <i class="fas fa-tools me-2"></i>Ferremas
-        </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'core:productos' %}"
-                >Productos</a
-              >
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#"
-                >Carrito <span class="badge bg-primary">0</span></a
-              >
-            </li>
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="#"
-                >Login/Registro (API)</a
-              >
-            </li>
-          </ul>
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'core:index' %}">
+                <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavSimple" aria-controls="navbarNavSimple" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavSimple">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:productos' %}">Productos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:login' %}">Iniciar Sesión</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-      </div>
     </nav>
 
-    <main class="main-content py-5 mt-5">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-md-8 col-lg-7">
-            <div class="card shadow-sm">
-              <div class="card-header bg-success text-white text-center">
-                <h2 class="h4 mb-0">Crear una Cuenta</h2>
-              </div>
-              <div class="card-body p-4">
-                {% if error_message %}
-                <div class="alert alert-danger" role="alert">
-                  {{ error_message }}
-                </div>
-                {% endif %} {% if success_message %}
-                <div class="alert alert-success" role="alert">
-                  {{ success_message }}
-                </div>
-                {% endif %}
-                <form id="registro-form">
-                  <div class="row">
-                    <div class="col-md-6 mb-3">
-                      <label for="nombre" class="form-label">Nombre</label>
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="nombre"
-                        required
-                      />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                      <label for="apellidos" class="form-label"
-                        >Apellidos</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="apellidos"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div class="mb-3">
-                    <label for="email" class="form-label"
-                      >Correo Electrónico</label
-                    >
-                    <input
-                      type="email"
-                      class="form-control"
-                      id="email"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="telefono" class="form-label">Teléfono</label>
-                    <input type="text" class="form-control" id="telefono" />
-                  </div>
-                  <div class="mb-3">
-                    <label for="password" class="form-label">Contraseña</label>
-                    <input
-                      type="password"
-                      class="form-control"
-                      id="password"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="password_confirm" class="form-label"
-                      >Confirmar Contraseña</label
-                    >
-                    <input
-                      type="password"
-                      class="form-control"
-                      id="password_confirm"
-                      required
-                    />
-                  </div>
-                  <div class="d-grid">
-                    <button type="submit" class="btn btn-success btn-lg">
-                      Registrarme
-                    </button>
-                  </div>
-                </form>
-
-                <div id="msg"></div>
-                <hr />
-                <div class="text-center">
-                  <p class="mb-0">¿Ya tienes una cuenta?</p>
-                  <a
-                    href="{% url 'core:login' %}"
-                    class="btn btn-outline-secondary mt-2"
-                  >
-                  </a>
-                </div>
-              </div>
+    <div class="container auth-container register-container">
+        <h2 class="text-center mb-4">{{ page_title|default:"Registrarme" }}</h2>
+        
+        <div id="api-message" class="alert-container mb-3">
             </div>
-          </div>
-        </div>
-      </div>
-    </main>
 
-    <footer class="footer mt-auto py-3 bg-light">
-      <div class="container text-center">
-        <p class="mb-0">
-          &copy; {% now "Y" %} Ferremas. Construyendo tus sueños.
-        </p>
-      </div>
+        <form id="registerForm">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="p_nombre" class="form-label">Primer Nombre</label>
+                    <input type="text" class="form-control" id="p_nombre" name="p_nombre" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="s_nombre" class="form-label">Segundo Nombre (Opcional)</label>
+                    <input type="text" class="form-control" id="s_nombre" name="s_nombre">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="p_apellido" class="form-label">Primer Apellido</label>
+                    <input type="text" class="form-control" id="p_apellido" name="p_apellido" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="s_apellido" class="form-label">Segundo Apellido (Opcional)</label>
+                    <input type="text" class="form-control" id="s_apellido" name="s_apellido">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="correo" class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-control" id="correo" name="correo" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="telefono" class="form-label">Teléfono (Opcional)</label>
+                    <input type="tel" class="form-control" id="telefono" name="telefono"> </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="clave" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="clave" name="clave" required minlength="6">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="clave2" class="form-label">Confirmar Contraseña</label>
+                    <input type="password" class="form-control" id="clave2" name="clave2" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100 mt-3">Registrarme</button>
+        </form>
+        <p class="text-center mt-3">¿Ya tienes una cuenta? <a href="{% url 'core:login' %}">Inicia Sesión</a></p>
+    </div>
+
+    <footer class="footer"> 
+        <div class="container">
+            <p class="mb-1">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+            <p class="mb-0">
+                <a href="#" class="text-white me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
+            </p>
+        </div>
     </footer>
 
-    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
     <script>
-document.getElementById("registro-form").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    
-    const nombre = document.getElementById("nombre").value.trim();
-    const apellidos = document.getElementById("apellidos").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
-    const password = document.getElementById("password").value;
-    const confirm = document.getElementById("password_confirm").value;
-    
-    const [p_apellido, s_apellido] = apellidos.split(" ");
-    
-    const payload = {
-        p_nombre: nombre,
-        s_nombre: null,
-        p_apellido: p_apellido || "",
-        s_apellido: s_apellido || "",
-        correo: email,
-        telefono: telefono,
-        password: password,
-        confirm_password: confirm
-    };
-    
-    const res = await fetch("http://localhost:8000/auth/registro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    const msgDiv = document.getElementById("msg");
-    if (res.ok) {
-        msgDiv.innerHTML = `<div class="alert alert-success">Cuenta creada con éxito. ¡Ahora puedes iniciar sesión!</div>`;
-    } else {
-        const err = await res.json();
-        msgDiv.innerHTML = `<div class="alert alert-danger">${err.detail || 'Error en el registro'}</div>`;
-    }
-});
-</script>
-
-  </body>
+        const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|escapejs }}";
+    </script>
+    <script src="{% static 'core/js/main.js' %}"></script>
+</body>
 </html>

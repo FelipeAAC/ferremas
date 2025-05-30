@@ -4,175 +4,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrito de Compras - Ferremas</title>
+    <title>{{ page_title|default:"Ferremas" }} - Ferremas</title>
     <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .product-thumbnail {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            margin-right: 1rem;
-        }
-    </style>
-</head>
+    </head>
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'core:index' %}">
-                <i class="fas fa-tools me-2"></i>Ferremas
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:productos' %}">Productos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{% url 'core:carrito' %}"> {% comment %} Asegúrate que esta URL exista {% endcomment %}
-                            <i class="fas fa-shopping-cart"></i> Carrito
-                            <span class="badge bg-primary rounded-pill" id="cart-count-nav">3</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Login/Registro (API)</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <main class="main-content py-5 mt-5">
-        <div class="container">
-            <header class="text-center mb-5">
-                <h1 class="display-5 fw-bold">Tu Carrito de Compras</h1>
-            </header>
-
-            {% comment %} Simulando items en el carrito. Reemplazar con datos reales del contexto. {% endcomment %}
-            {% with items_en_carrito=True total_carrito=125890 %}
-            {% if items_en_carrito %}
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header">
-                            <h4 class="mb-0">Productos en tu carrito (<span id="cart-item-count-page">3</span>)</h4>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                {% comment %} Item 1 - Ejemplo {% endcomment %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <img src="{% static 'core/images/placeholder.png' %}" alt="Producto 1" class="product-thumbnail rounded">
-                                        <div>
-                                            <h6 class="my-0">Taladro Percutor Inalámbrico 20V</h6>
-                                            <small class="text-muted">SKU: TLDR-001</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <input type="number" class="form-control form-control-sm d-inline-block" value="1" min="1" style="width: 70px;">
-                                        <span class="text-muted ms-2">$59.990</span>
-                                        <button class="btn btn-sm btn-outline-danger ms-2"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </li>
-                                {% comment %} Item 2 - Ejemplo {% endcomment %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <img src="{% static 'core/images/placeholder.png' %}" alt="Producto 2" class="product-thumbnail rounded">
-                                        <div>
-                                            <h6 class="my-0">Set de Brocas Titanio (15 piezas)</h6>
-                                            <small class="text-muted">SKU: BROCA-SET-15</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <input type="number" class="form-control form-control-sm d-inline-block" value="2" min="1" style="width: 70px;">
-                                        <span class="text-muted ms-2">$22.950</span>
-                                        <button class="btn btn-sm btn-outline-danger ms-2"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </li>
-                                {% comment %} Item 3 - Ejemplo {% endcomment %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <img src="{% static 'core/images/placeholder.png' %}" alt="Producto 3" class="product-thumbnail rounded">
-                                        <div>
-                                            <h6 class="my-0">Huaipe Industrial (Rollo 5kg)</h6>
-                                            <small class="text-muted">SKU: HUAIPE-005</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <input type="number" class="form-control form-control-sm d-inline-block" value="1" min="1" style="width: 70px;">
-                                        <span class="text-muted ms-2">$19.990</span>
-                                        <button class="btn btn-sm btn-outline-danger ms-2"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <a href="{% url 'core:productos' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Seguir Comprando
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'core:index' %}">
+            <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'core:productos' %}">Productos</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-shopping-cart"></i> Carrito
+                        <span class="badge bg-danger rounded-pill cart-count-badge" id="cart-count-badge">0</span> {# El ID es importante para JS #}
                     </a>
-                </div>
+                    <ul class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="cartDropdown" style="min-width: 300px;">
+                        <li id="cart-preview-empty" class="text-center p-2">Tu carrito está vacío.</li> {# Mensaje de carrito vacío #}
 
-                <div class="col-lg-4">
-                    <div class="card shadow-sm">
-                        <div class="card-header">
-                            <h4 class="mb-0">Resumen de la Compra</h4>
+                        <div id="cart-preview-items">
+                            {# Los ítems del carrito se renderizarán aquí con JavaScript #}
+                            {# Elimina los ejemplos hardcodeados como Taladro Percutor y Set Brocas #}
                         </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Subtotal</span>
-                                    <strong>${{ total_carrito|floatformat:"0" }}</strong>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Despacho</span>
-                                    <strong>$4.990</strong> {% comment %} O "Gratis" o calculado {% endcomment %}
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span class="fw-bold">Total</span>
-                                    <strong class="h5">${{ total_carrito|add:4990|floatformat:"0" }} CLP</strong>
-                                </li>
-                            </ul>
-                            <div class="d-grid mt-3">
-                                <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-lg"> {% comment %} Asegúrate que esta URL exista {% endcomment %}
-                                    <i class="fas fa-credit-card me-2"></i>Proceder al Pago
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                <h3 class="mb-3">Tu carrito está vacío</h3>
-                <p class="lead text-muted">Aún no has agregado productos a tu carrito.</p>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
+                            <strong>Subtotal:</strong>
+                            <span id="cart-preview-subtotal">$0.00</span> {# ID para el subtotal #}
+                        </li>
+                        {# Puedes añadir una fila para el total si es diferente del subtotal (ej. con envío) #}
+                        {# <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
+                            <strong>Total:</strong>
+                            <span id="cart-preview-total">$0.00</span>
+                        </li> #}
+                        <li>
+                            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito</a>
+                            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100">Ir a Pagar</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:login' %}">Login/Registro (API)</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+    <main class="main-content">
+        <section class="hero-section">
+            <div class="container">
+                <h1 class="display-4 fw-bold">{{ page_title|default:"Ferretería Ferremas" }}</h1>
+                <p class="lead my-3">{{ welcome_message|default:"Tu solución en herramientas y materiales de construcción." }}</p>
+                <p class="lead">
+                    Explora nuestra amplia gama de herramientas y materiales para todos tus proyectos.
+                </p>
                 <a href="{% url 'core:productos' %}" class="btn btn-primary btn-lg mt-3">
-                    <i class="fas fa-store me-2"></i>Ir a la Tienda
+                    <i class="fas fa-shopping-cart me-2"></i>Ver Catálogo
                 </a>
             </div>
-            {% endif %}
-            {% endwith %}
+        </section>
 
+        <div class="container py-5">
+            <h2 class="text-center mb-5 display-6">¿Por qué elegir Ferremas?</h2>
+            <div class="row text-center">
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column align-items-center">
+                            <div class="feature-icon"><i class="fas fa-cogs"></i></div>
+                            <h5 class="card-title">Variedad Insuperable</h5>
+                            <p class="card-text">Desde herramientas básicas hasta equipos especializados, ¡lo tenemos todo!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                     <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column align-items-center">
+                            <div class="feature-icon"><i class="fas fa-truck-fast"></i></div>
+                            <h5 class="card-title">Entrega Confiable</h5>
+                            <p class="card-text">Recibe tus pedidos de forma rápida y segura en la comodidad de tu hogar o proyecto.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                     <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column align-items-center">
+                            <div class="feature-icon"><i class="fas fa-headset"></i></div>
+                            <h5 class="card-title">Atención Personalizada</h5>
+                            <p class="card-text">Nuestro equipo de expertos está listo para asesorarte en cada paso.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center">
-            <p class="mb-0">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+    <footer class="footer mt-auto"> 
+        <div class="container">
+            <p>&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+            <p>
+                <a href="#" class="text-white me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
+            </p>
         </div>
     </footer>
 
     <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        // Aquí iría el JavaScript para actualizar cantidades, eliminar items,
-        // y actualizar el contador del carrito en la barra de navegación y la página.
-    </script>
+    <script src="{% static 'core/js/main.js' %}"></script>
 </body>
 </html>

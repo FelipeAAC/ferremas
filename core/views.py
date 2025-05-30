@@ -14,10 +14,28 @@ API_CRUD_BASE_URL = "http://127.0.0.1:8001"
 API_AUTH_BASE_URL = "http://127.0.0.1:8002"
 API_PAGO_BASE_URL = "http://127.0.0.1:8003"
 
+def perfil_view(request):
+    context = {
+        'page_title': 'Mi Perfil',
+        'api_auth_url_js': API_AUTH_BASE_URL
+    }
+    return render(request, 'core/perfil.html', context)
+
+def registro_view(request):
+    context = {
+        'page_title': 'Registro de Usuario',
+        'api_auth_url_js': API_AUTH_BASE_URL
+    }
+    return render(request, 'core/registro.html', context)
+
+def login_view(request):
+    context = {
+        'page_title': 'Iniciar Sesión',
+        'api_auth_url_js': API_AUTH_BASE_URL
+    }
+    return render(request, 'core/login.html', context)
+
 def index_view(request):
-    """
-    Vista para la página de inicio.
-    """
     context = {
         'page_title': 'Bienvenido a Ferremas',
         'welcome_message': 'Tu ferretería online de confianza.'
@@ -25,10 +43,6 @@ def index_view(request):
     return render(request, 'core/index.html', context)
 
 def productos(request):
-    """
-    Vista para la página de listado de productos.
-    Obtiene datos de categorías y productos desde la API FastAPI CRUD.
-    """
     structured_categories_list = []
     api_error_message = None
 
@@ -88,15 +102,13 @@ def productos(request):
         'categories_list': structured_categories_list,
         'api_error_message': api_error_message
     }
-    return render(request, 'core/productos.html', context) #
-
+    return render(request, 'core/productos.html', context) 
 
 def upload_product_image(request, id_producto_api):
-    
-    upload_form_template = 'core/upload_image_form.html' #
+    upload_form_template = 'core/upload_image_form.html' 
 
     if request.method == 'POST':
-        form = ProductImageUploadForm(request.POST, request.FILES, initial={'id_producto': id_producto_api}) #
+        form = ProductImageUploadForm(request.POST, request.FILES, initial={'id_producto': id_producto_api})
         if form.is_valid():
             imagen_file = form.cleaned_data['imagen']
             
@@ -144,95 +156,22 @@ def upload_product_image(request, id_producto_api):
                     fs.delete(filename_saved_on_disk)
                 form.add_error(None, f"Ocurrió un error inesperado: {e_general}. El archivo local no se ha conservado.")
     else:
-        form = ProductImageUploadForm(initial={'id_producto': id_producto_api}) #
+        form = ProductImageUploadForm(initial={'id_producto': id_producto_api})
         
     return render(request, upload_form_template, {'form': form, 'id_producto': id_producto_api})
 
-def login_view(request):
-    context = {'error_message': None}
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        if username == "test" and password == "test":
-            request.session['user_info'] = {'username': username, 'first_name': 'Usuario'}
-            return redirect('core:index')
-        else:
-            context['error_message'] = "Credenciales de demostración incorrectas (usa test/test)."
-
-    return render(request, 'core/login.html', context)
-
-def registro_view(request):
-    context = {'error_message': None, 'success_message': None}
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        apellidos = request.POST.get('apellidos')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        password_confirm = request.POST.get('password_confirm')
-        terminos = request.POST.get('terminos')
-
-        if password != password_confirm:
-            context['error_message'] = "Las contraseñas no coinciden."
-        elif not terminos:
-            context['error_message'] = "Debes aceptar los términos y condiciones."
-        else:
-            logger.info(f"Intento de registro: {nombre} {apellidos}, {email}")
-            context['success_message'] = f"¡Registro simulado exitoso para {nombre}! Ahora puedes iniciar sesión."
-    return render(request, 'core/registro.html', context)
-
+# Vista para la página del carrito de compras.x
 def carrito_view(request):
-    items_del_carrito_ejemplo = [
-        {'id': 1, 'nombre': 'Taladro Percutor Inalámbrico 20V', 'sku': 'TLDR-001', 'cantidad': 1, 'precio_unitario': 59990, 'imagen_url': 'productos_imagenes/taladro.jpg'},
-        {'id': 2, 'nombre': 'Set de Brocas Titanio (15 piezas)', 'sku': 'BROCA-SET-15', 'cantidad': 2, 'precio_unitario': 22950, 'imagen_url': 'productos_imagenes/brocas.jpg'},
-        {'id': 3, 'nombre': 'Huaipe Industrial (Rollo 5kg)', 'sku': 'HUAIPE-005', 'cantidad': 1, 'precio_unitario': 19990, 'imagen_url': 'productos_imagenes/huaipe.jpg'},
-    ]
-    
-    total_carrito_ejemplo = sum(item['cantidad'] * item['precio_unitario'] for item in items_del_carrito_ejemplo)
-    
     context = {
         'page_title': 'Tu Carrito de Compras',
-        'items_carrito': items_del_carrito_ejemplo, # Reemplazar con la lógica real
-        'total_carrito': total_carrito_ejemplo, # Reemplazar con la lógica real
-        'costo_despacho': 4990, # Podría ser dinámico
     }
-    if not items_del_carrito_ejemplo: # Si el carrito está vacío
-        context['items_en_carrito'] = False
-    else:
-        context['items_en_carrito'] = True
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        item_id = request.POST.get('item_id')
-
-        if action == 'update_quantity' and item_id:
-            new_quantity = int(request.POST.get('quantity', 1))
-            logger.info(f"Actualizar cantidad para item {item_id} a {new_quantity}")
-            return redirect('core:carrito') 
-
-        if action == 'remove_item' and item_id:
-            logger.info(f"Eliminar item {item_id}")
-            return redirect('core:carrito')
-            
     return render(request, 'core/carrito.html', context)
 
 def realizar_compra_view(request):
-    items_del_carrito_ejemplo = [
-        {'id': 1, 'nombre': 'Taladro Percutor Inalámbrico 20V', 'cantidad': 1, 'precio_total': 59990},
-        {'id': 2, 'nombre': 'Set de Brocas Titanio (15 piezas)', 'cantidad': 2, 'precio_total': 45900},
-        {'id': 3, 'nombre': 'Huaipe Industrial (Rollo 5kg)', 'cantidad': 1, 'precio_total': 19990},
-    ]
-    subtotal_ejemplo = sum(item['precio_total'] for item in items_del_carrito_ejemplo)
-    descuento_ejemplo = 5000 # Simulado
-    costo_despacho_ejemplo = 4990
-    total_final_ejemplo = subtotal_ejemplo - descuento_ejemplo + costo_despacho_ejemplo
-
     context = {
         'page_title': 'Finalizar Compra',
-        'items_resumen': items_del_carrito_ejemplo,
-        'subtotal': subtotal_ejemplo,
-        'descuento': descuento_ejemplo,
-        'costo_despacho': costo_despacho_ejemplo,
-        'total_final': total_final_ejemplo,
     }
+    # Asume que 'core/realizar_compra.html' es la plantilla genérica.
     return render(request, 'core/realizar_compra.html', context)
 
 def procesar_pago_view(request):
@@ -241,15 +180,15 @@ def procesar_pago_view(request):
         direccion = request.POST.get('address')
         logger.info(f"Procesando pago para: {nombre} en {direccion}")
         numero_orden_simulado = f"FM-{int(time.time())}"
+        # Redirige a la página de éxito con el número de orden.
         return redirect('core:compra_exitosa_with_order', numero_orden=numero_orden_simulado)
-
-
+    # Si no es POST, redirige de vuelta a la página de compra.
     return redirect('core:realizar_compra')
 
-def compra_exitosa_view(request, numero_orden=None): # Modificado para aceptar numero_orden
+def compra_exitosa_view(request, numero_orden=None):
     context = {
         'page_title': '¡Compra Exitosa!',
         'numero_orden': numero_orden if numero_orden else "Desconocido",
-        'user': request.session.get('user_info') # Para el saludo personalizado
+        'user': request.session.get('user_info') # Para el saludo personalizado (si usas sesiones de Django)
     }
     return render(request, 'core/compra_exitosa.html', context)

@@ -4,22 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Ferremas</title>
-    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>{{ page_title|default:"Iniciar Sesión" }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'core/css/main.css' %}">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 56px; /* Ajuste para el navbar fijo */
+        }
+        .auth-container {
+            max-width: 450px;
+            margin-top: 3rem; /* Espacio desde el navbar */
+            margin-bottom: 3rem; /* Espacio antes del footer */
+            flex-grow: 1; /* Permite que el contenedor principal crezca */
+        }
+        .footer {
+            background-color: #343a40; /* Color oscuro para el footer */
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: auto; /* Empuja el footer hacia abajo */
+        }
+        .footer a {
+            color: #adb5bd; /* Color más suave para los enlaces del footer */
+        }
+        .footer a:hover {
+            color: #ffffff;
+        }
+        .navbar-brand i {
+            color: #ffc107; /* Color amarillo para el icono de herramientas */
+        }
+    </style>
 </head>
 <body>
-
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'core:index' %}">
-                <i class="fas fa-tools me-2"></i>Ferremas
+                <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavSimple" aria-controls="navbarNavSimple" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="collapse navbar-collapse" id="navbarNavSimple">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
@@ -28,67 +57,49 @@
                         <a class="nav-link" href="{% url 'core:productos' %}">Productos</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Carrito <span class="badge bg-primary">0</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">Login/Registro (API)</a>
+                        <a class="nav-link" href="{% url 'core:registro' %}">Registrarme</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <main class="main-content py-5 mt-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-6 col-lg-5">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white text-center">
-                            <h2 class="h4 mb-0">Iniciar Sesión</h2>
-                        </div>
-                        <div class="card-body p-4">
-                            {% if error_message %}
-                                <div class="alert alert-danger" role="alert">
-                                    {{ error_message }}
-                                </div>
-                            {% endif %}
-                            <form method="post" action="{% url 'core:login' %}">
-                                {% csrf_token %}
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Correo Electrónico / Usuario</label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Contraseña</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <a href="#">¿Olvidaste tu contraseña?</a>
-                                </div>
-                            </form>
-                            <hr>
-                            <div class="text-center">
-                                <p class="mb-0">¿No tienes una cuenta?</p>
-                                <a href="{% url 'core:registro' %}" class="btn btn-outline-secondary mt-2">
-                                    Regístrate aquí
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+    <div class="container auth-container login-container">
+        <h2 class="text-center mb-4">{{ page_title|default:"Iniciar Sesión" }}</h2>
 
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center">
-            <p class="mb-0">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+        <div id="api-message" class="alert-container">
+            </div>
+
+        <form id="loginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+        </form>
+        <p class="text-center mt-3">¿No tienes una cuenta? <a href="{% url 'core:registro' %}">Regístrate</a></p>
+    </div>
+
+    <footer class="footer"> 
+        <div class="container">
+            <p class="mb-1">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
+            <p class="mb-0">
+                <a href="#" class="text-white me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
+            </p>
         </div>
     </footer>
 
-    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <script>
+        const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|escapejs }}";
+    </script>
+    <script src="{% static 'core/js/main.js' %}"></script>
 </body>
 </html>
