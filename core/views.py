@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 API_CRUD_BASE_URL = "http://127.0.0.1:8001"
 API_AUTH_BASE_URL = "http://127.0.0.1:8002"
-API_PAGO_BASE_URL = "http://127.0.0.1:8003"
 
 def perfil_view(request):
     context = {
         'page_title': 'Mi Perfil',
-        'api_auth_url_js': API_AUTH_BASE_URL
+        'api_auth_url_js': API_AUTH_BASE_URL,
+        'api_crud_url_js': API_CRUD_BASE_URL
     }
     return render(request, 'core/perfil.html', context)
 
@@ -59,7 +59,7 @@ def productos(request):
 
         for cat_data in api_categorias_raw:
             categories_with_products[cat_data['id_categoria']] = {
-                'id': str(cat_data['id_categoria']),
+                'id': str(cat_data['id_categoria']), # Asegurarse que el ID sea string si se usa como clave de JS
                 'name': cat_data['descripcion'],
                 'products': []
             }
@@ -68,10 +68,13 @@ def productos(request):
             categoria_id = prod_data.get('id_categoria')
             if categoria_id in categories_with_products:
                 categories_with_products[categoria_id]['products'].append({
-                    'id': prod_data['id_producto'],
+                    'id': prod_data.get('id_producto'), # La plantilla espera 'id'
                     'name': prod_data.get('nombre', 'Producto sin nombre'),
                     'price': prod_data.get('precio', 0.0),
-                    'imagen_url': prod_data.get('imagen_url') 
+                    'imagen_url': prod_data.get('imagen_url'),
+                    'marca': prod_data.get('marca'), # Añadido si tu API lo devuelve y la plantilla lo usa
+                    'descripcion_detallada': prod_data.get('descripcion_detallada'), # Añadido si tu API lo devuelve
+                    'id_categoria': prod_data.get('id_categoria') # Útil para la página de detalle
                 })
             else:
                 product_name = prod_data.get('nombre', f"ID {prod_data.get('id_producto', 'Desconocido')}")
@@ -81,7 +84,7 @@ def productos(request):
 
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Error de conexión al intentar alcanzar la API CRUD en {API_CRUD_BASE_URL}: {e}")
-        api_error_message = f"No se pudo conectar a la API de datos en {API_CRUD_BASE_URL}. Por favor, asegúrate de que el servicio API esté corriendo en esa dirección y sea accesible."
+        api_error_message = f"No se pudo conectar a la API de datos. Por favor, verifica que el servicio esté corriendo y sea accesible."
     except requests.exceptions.HTTPError as e:
         logger.error(f"Error HTTP de la API CRUD: {e.response.status_code} - {e.response.text}")
         error_detail = "Error desconocido del servidor API."
@@ -100,9 +103,10 @@ def productos(request):
     context = {
         'page_title': 'Catálogo de Productos',
         'categories_list': structured_categories_list,
-        'api_error_message': api_error_message
+        'api_error_message': api_error_message,
+        'api_auth_url_js': API_AUTH_BASE_URL
     }
-    return render(request, 'core/productos.html', context) 
+    return render(request, 'core/productos.html', context)
 
 def upload_product_image(request, id_producto_api):
     upload_form_template = 'core/upload_image_form.html' 
@@ -160,10 +164,10 @@ def upload_product_image(request, id_producto_api):
         
     return render(request, upload_form_template, {'form': form, 'id_producto': id_producto_api})
 
-# Vista para la página del carrito de compras.x
 def carrito_view(request):
     context = {
         'page_title': 'Tu Carrito de Compras',
+        'api_auth_url_js': API_AUTH_BASE_URL
     }
     return render(request, 'core/carrito.html', context)
 
@@ -189,6 +193,45 @@ def compra_exitosa_view(request, numero_orden=None):
     context = {
         'page_title': '¡Compra Exitosa!',
         'numero_orden': numero_orden if numero_orden else "Desconocido",
-        'user': request.session.get('user_info') # Para el saludo personalizado (si usas sesiones de Django)
+        'user': request.session.get('user_info'),
+        'api_auth_url_js': API_AUTH_BASE_URL
     }
     return render(request, 'core/compra_exitosa.html', context)
+
+def detalle_producto_view(request, id_producto_api):
+    context = {
+        'page_title': 'Detalle del Producto',
+        'api_auth_url_js': API_AUTH_BASE_URL, # Para main.js en base.html o la plantilla completa
+        'product': None,
+        'error_message': None
+    }
+    try:
+        response_producto = requests.get(f"{API_CRUD_BASE_URL}/productosgetid/{id_producto_api}")
+        response_producto.raise_for_status()
+        producto_data = response_producto.json()
+        
+        context['product'] = producto_data
+        context['page_title'] = producto_data.get('nombre', 'Detalle del Producto')
+
+        if producto_data.get('id_categoria'):
+            try:
+                response_categoria = requests.get(f"{API_CRUD_BASE_URL}/categoriasgetid/{producto_data['id_categoria']}")
+                if response_categoria.ok:
+                    context['product']['category_name'] = response_categoria.json().get('descripcion')
+            except Exception as e_cat:
+                logger.warning(f"No se pudo obtener el nombre de la categoría para el producto {id_producto_api}: {e_cat}")
+
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Error HTTP al obtener detalle del producto ID {id_producto_api} desde API: {e.response.status_code} - {e.response.text}")
+        if e.response.status_code == 404:
+            context['error_message'] = "Producto no encontrado."
+        else:
+            context['error_message'] = "Error al cargar los detalles del producto. Inténtalo más tarde."
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error de conexión al obtener detalle del producto ID {id_producto_api}: {e}")
+        context['error_message'] = "No se pudo conectar con el servicio de productos. Verifica tu conexión."
+    except Exception as e:
+        logger.error(f"Error inesperado al obtener detalle del producto ID {id_producto_api}: {e}", exc_info=True)
+        context['error_message'] = "Ocurrió un error inesperado al cargar el producto."
+        
+    return render(request, 'core/detalle_producto.html', context)

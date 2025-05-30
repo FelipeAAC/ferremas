@@ -1,126 +1,178 @@
+{% extends 'core/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default:"Ferremas" }} - Ferremas</title>
-    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    </head>
-<body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+{% block page_title %}{{ page_title|default:"Bienvenido a Ferremas" }}{% endblock page_title %}
+
+{% block extra_head %}
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1920x600/6c757d/343a40?text=Ferreter%C3%ADa+Moderna'); /* Reemplaza con una imagen tuya si tienes */
+        background-size: cover;
+        background-position: center center;
+        color: white;
+        padding: 6rem 0;
+        text-align: center;
+    }
+    .hero-section h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    }
+    .hero-section .lead {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
+    }
+    .hero-section .btn-primary {
+        font-size: 1.1rem;
+        padding: 0.75rem 1.5rem;
+        border-width: 2px;
+    }
+    .section-title {
+        margin-bottom: 3rem;
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background-color: var(--bs-primary);
+    }
+    .category-card, .feature-card {
+        border: none;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 0.5rem;
+    }
+    .category-card:hover, .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,.1);
+    }
+    .category-card .card-body {
+        padding: 1.5rem;
+    }
+    .category-icon {
+        font-size: 3rem;
+        color: var(--bs-primary);
+        margin-bottom: 1rem;
+        width: 70px;
+        height: 70px;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .feature-card .card-body {
+        padding: 2rem;
+    }
+    .feature-icon-lg { /* Para la sección "Por qué elegirnos" */
+        font-size: 2.5rem; /* Un poco más grande */
+        color: var(--bs-primary);
+        margin-bottom: 1rem;
+    }
+    .btn-outline-secondary:hover {
+        background-color: var(--bs-secondary);
+        color: white;
+    }
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+<section class="hero-section">
     <div class="container">
-        <a class="navbar-brand" href="{% url 'core:index' %}">
-            <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
+        <h1 class="display-3">{{ page_title|default:"Ferretería Ferremas" }}</h1>
+        <p class="lead my-4">{{ welcome_message|default:"Tu solución integral en herramientas y materiales de construcción." }}</p>
+        <p class="mb-4">
+            Explora nuestra amplia gama de productos de calidad para todos tus proyectos, grandes o pequeños.
+        </p>
+        <a href="{% url 'core:productos' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-shopping-bag me-2"></i>Explorar Catálogo
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'core:index' %}">Inicio</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'core:productos' %}">Productos</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-shopping-cart"></i> Carrito
-                        <span class="badge bg-danger rounded-pill cart-count-badge" id="cart-count-badge">0</span> {# El ID es importante para JS #}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="cartDropdown" style="min-width: 300px;">
-                        <li id="cart-preview-empty" class="text-center p-2">Tu carrito está vacío.</li>
-
-                        <div id="cart-preview-items">
-                        </div>
-                        
-                        <li><hr class="dropdown-divider"></li>
-                        <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
-                            <strong>Subtotal:</strong>
-                            <span id="cart-preview-subtotal">$0.00</span> {# ID para el subtotal #}
-                        </li>
-                        <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row">
-                            <strong>Total:</strong>
-                            <span id="cart-preview-total">$0.00</span>
-                        </li>
-                        <li>
-                            <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-1">Ver Carrito</a>
-                            <a href="{% url 'core:realizar_compra' %}" class="btn btn-success btn-sm w-100">Ir a Pagar</a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'core:login' %}">Login/Registro (API)</a>
-                </li>
-            </ul>
-        </div>
+        <!-- <a href="#" class="btn btn-outline-light btn-lg ms-2">
+            <i class="fas fa-tags me-2"></i>Ver Ofertas
+        </a> -->
     </div>
-</nav>
+</section>
 
-    <main class="main-content">
-        <section class="hero-section">
-            <div class="container">
-                <h1 class="display-4 fw-bold">{{ page_title|default:"Ferretería Ferremas" }}</h1>
-                <p class="lead my-3">{{ welcome_message|default:"Tu solución en herramientas y materiales de construcción." }}</p>
-                <p class="lead">
-                    Explora nuestra amplia gama de herramientas y materiales para todos tus proyectos.
-                </p>
-                <a href="{% url 'core:productos' %}" class="btn btn-primary btn-lg mt-3">
-                    <i class="fas fa-shopping-cart me-2"></i>Ver Catálogo
-                </a>
+<div class="container py-5">
+    <section id="featured-categories" class="mb-5">
+        <h2 class="text-center section-title">Categorías Destacadas</h2>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card category-card text-center h-100">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div class="category-icon"><i class="fas fa-tools"></i></div>
+                        <h5 class="card-title fw-semibold mt-2">Herramientas Manuales</h5>
+                        <p class="card-text small text-muted">Todo lo que necesitas para trabajos precisos.</p>
+                        <a href="{% url 'core:productos' %}" class="btn btn-outline-secondary btn-sm mt-auto">Ver más</a>
+                    </div>
+                </div>
             </div>
-        </section>
-
-        <div class="container py-5">
-            <h2 class="text-center mb-5 display-6">¿Por qué elegir Ferremas?</h2>
-            <div class="row text-center">
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body d-flex flex-column align-items-center">
-                            <div class="feature-icon"><i class="fas fa-cogs"></i></div>
-                            <h5 class="card-title">Variedad Insuperable</h5>
-                            <p class="card-text">Desde herramientas básicas hasta equipos especializados, ¡lo tenemos todo!</p>
-                        </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card category-card text-center h-100">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div class="category-icon"><i class="fas fa-bolt"></i></div>
+                        <h5 class="card-title fw-semibold mt-2">Herramientas Eléctricas</h5>
+                        <p class="card-text small text-muted">Potencia y eficiencia para tus proyectos.</p>
+                        <a href="{% url 'core:productos' %}" class="btn btn-outline-secondary btn-sm mt-auto">Ver más</a>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
-                     <div class="card shadow-sm h-100">
-                        <div class="card-body d-flex flex-column align-items-center">
-                            <div class="feature-icon"><i class="fas fa-truck-fast"></i></div>
-                            <h5 class="card-title">Entrega Confiable</h5>
-                            <p class="card-text">Recibe tus pedidos de forma rápida y segura en la comodidad de tu hogar o proyecto.</p>
-                        </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card category-card text-center h-100">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div class="category-icon"><i class="fas fa-hard-hat"></i></div>
+                        <h5 class="card-title fw-semibold mt-2">Seguridad y Protección</h5>
+                        <p class="card-text small text-muted">Equipamiento esencial para trabajar seguro.</p>
+                        <a href="{% url 'core:productos' %}" class="btn btn-outline-secondary btn-sm mt-auto">Ver más</a>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
-                     <div class="card shadow-sm h-100">
-                        <div class="card-body d-flex flex-column align-items-center">
-                            <div class="feature-icon"><i class="fas fa-headset"></i></div>
-                            <h5 class="card-title">Atención Personalizada</h5>
-                            <p class="card-text">Nuestro equipo de expertos está listo para asesorarte en cada paso.</p>
-                        </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card category-card text-center h-100">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div class="category-icon"><i class="fas fa-paint-roller"></i></div>
+                        <h5 class="card-title fw-semibold mt-2">Pinturas y Acabados</h5>
+                        <p class="card-text small text-muted">Dale el toque final perfecto a tus espacios.</p>
+                        <a href="{% url 'core:productos' %}" class="btn btn-outline-secondary btn-sm mt-auto">Ver más</a>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </section>
 
-    <footer class="footer mt-auto"> 
+    <section id="why-us" class="py-5 bg-white rounded shadow-sm">
         <div class="container">
-            <p>&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
-            <p>
-                <a href="#" class="text-white me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
-                <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-lg"></i></a>
-                <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
-            </p>
+            <h2 class="text-center section-title">¿Por Qué Elegir Ferremas?</h2>
+            <div class="row text-center g-4">
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon-lg"><i class="fas fa-medal"></i></div>
+                        <h5 class="fw-semibold">Calidad Garantizada</h5>
+                        <p class="text-muted">Solo ofrecemos productos de marcas reconocidas y de la más alta calidad para asegurar tu satisfacción.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                     <div class="feature-card h-100">
+                        <div class="feature-icon-lg"><i class="fas fa-shipping-fast"></i></div>
+                        <h5 class="fw-semibold">Entrega Rápida y Confiable</h5>
+                        <p class="text-muted">Recibe tus pedidos de forma eficiente y segura en la comodidad de tu hogar o directamente en tu proyecto.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                     <div class="feature-card h-100">
+                        <div class="feature-icon-lg"><i class="fas fa-headset"></i></div>
+                        <h5 class="fw-semibold">Asesoramiento Experto</h5>
+                        <p class="text-muted">Nuestro equipo de profesionales está siempre listo para ayudarte a encontrar la solución perfecta.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-    </footer>
-
-    <script src="{% static 'core/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'core/js/main.js' %}"></script>
-</body>
-</html>
+    </section>
+</div>
+{% endblock content %}
