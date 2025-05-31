@@ -15,4 +15,5 @@ urlpatterns = [
     path('compra_exitosa/', views.compra_exitosa_view, name='compra_exitosa_default'),
     path('compra_exitosa/<str:numero_orden>/', views.compra_exitosa_view, name='compra_exitosa_with_order'),
     path('perfil/', views.perfil_view, name='perfil'),
+    path('admin-api-crud/', views.admin_api_crud_view, name='admin_api_crud'),
 ]

@@ -1,0 +1,139 @@
+{% extends 'core/basedos.html' %}
+{% load static %}
+
+{% block title %}Admin API CRUD Panel{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .container {
+        max-width: 960px;
+    }
+    .accordion-button:not(.collapsed) {
+        color: #0c63e4;
+        background-color: #e7f1ff;
+    }
+    .accordion-button:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .results-container {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .results-container code {
+        color: #212529;
+    }
+    .modal-body {
+        background-color: #fdfdff;
+    }
+    .btn-action-group .btn {
+        margin-bottom: 0.5rem;
+    }
+    #crudModal .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5 shadow-sm p-4 bg-white rounded">
+    <div class="text-center mb-4">
+        <h1 class="display-5 d-inline-block align-middle">Panel de Administración API</h1>
+    </div>
+
+    <p class="text-muted text-center mb-4">
+        Utilice este panel para interactuar directamente con los endpoints de la API.
+    </p>
+
+    <div class="accordion" id="apiCrudAccordion">
+        {% for entity in api_entities %}
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header" id="heading-{{ entity.name|slugify }}">
+                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ entity.name|slugify }}" aria-expanded="false" aria-controls="collapse-{{ entity.name|slugify }}">
+                    Gestionar: {{ entity.name }}
+                </button>
+            </h2>
+            <div id="collapse-{{ entity.name|slugify }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ entity.name|slugify }}" data-bs-parent="#apiCrudAccordion">
+                <div class="accordion-body">
+                    <p class="small text-muted">Operaciones CRUD para la entidad: <strong>{{ entity.name }}</strong>.</p>
+                    <div class="mb-3 btn-action-group">
+                        <button class="btn btn-info btn-sm me-1 crud-action" data-entity-name="{{ entity.name }}" data-action="getAll">
+                            <i class="fas fa-list me-1"></i> GET All
+                        </button>
+                        <button class="btn btn-primary btn-sm me-1 crud-action" data-entity-name="{{ entity.name }}" data-id-field-name="{{ entity.id_field_path_param_name }}" data-action="getById">
+                            <i class="fas fa-search me-1"></i> GET by ID
+                        </button>
+                        <button class="btn btn-success btn-sm me-1 crud-action" data-entity-name="{{ entity.name }}" data-action="create">
+                            <i class="fas fa-plus-circle me-1"></i> POST (Crear)
+                        </button>
+                        <button class="btn btn-warning btn-sm me-1 crud-action" data-entity-name="{{ entity.name }}" data-id-field-name="{{ entity.id_field_path_param_name }}" data-action="update">
+                            <i class="fas fa-edit me-1"></i> PUT (Actualizar)
+                        </button>
+                        <button class="btn btn-danger btn-sm me-1 crud-action" data-entity-name="{{ entity.name }}" data-id-field-name="{{ entity.id_field_path_param_name }}" data-action="delete">
+                            <i class="fas fa-trash-alt me-1"></i> DELETE
+                        </button>
+                        <button class="btn btn-secondary btn-sm crud-action" data-entity-name="{{ entity.name }}" data-id-field-name="{{ entity.id_field_path_param_name }}" data-action="patch">
+                            <i class="fas fa-file-medical-alt me-1"></i> PATCH
+                        </button>
+                    </div>
+
+                    <h6 class="mt-4">Resultados para {{entity.name}}:</h6>
+                    <div class="results-container" id="results-{{ entity.name|slugify }}">
+                        <small class="text-muted">Los resultados de las operaciones GET All o mensajes de otras operaciones se mostrarán aquí.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="crudModal" tabindex="-1" aria-labelledby="crudModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title" id="crudModalLabel">Detalle / Formulario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="crudModalBody">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i> Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" id="crudModalSaveButton" style="display: none;">
+            <i class="fas fa-save me-1"></i> Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = "{{ API_CRUD_BASE_URL_for_js|default:'http://127.0.0.1:8001' }}";
+    const API_ENTITIES_DATA = {{ api_entities_json|safe }};
+
+    let currentEntityName = null;
+    let currentAction = null;
+    let currentItemId = null;
+</script>
+<script src="{% static 'core/js/admin.js' %}"></script>
+{% endblock extra_js %}
