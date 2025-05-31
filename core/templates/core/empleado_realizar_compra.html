@@ -1,0 +1,225 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block page_title %}{{ page_title|default:"Registrar Venta" }}{% endblock page_title %}
+
+{% block extra_head %}
+<style>
+    .main-content { flex-grow: 1; padding-top: 1.5rem; padding-bottom: 2rem; }
+    .payment-method-option { padding: 1rem; border: 1px solid #dee2e6; border-radius: .375rem; margin-bottom: 0.5rem; cursor: pointer; }
+    .payment-method-option:hover, .payment-method-option.active { background-color: #e9ecef; }
+    .payment-details { display: none; margin-top: 1rem; padding: 1rem; background-color: #f8f9fa; border-radius: .375rem; }
+    .payment-details.active { display: block; }
+    .alert-container { min-height: 50px; }
+    .order-summary-img { width: 50px; height: 50px; object-fit: cover; border-radius: .25rem; }
+    .client-management-section .form-control-sm { font-size: 0.875rem; }
+    .client-search-results { max-height: 200px; overflow-y: auto; border: 1px solid #ced4da; border-radius: .25rem; margin-top: .5rem; }
+    .client-search-results .list-group-item { cursor: pointer; }
+    .client-search-results .list-group-item:hover { background-color: #f0f0f0; }
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+<main class="main-content">
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-5 fw-bold">{{ page_title|default:"Registrar Venta" }}</h1>
+        </header>
+
+        <div id="checkout-alert-container" class="alert-container mb-3"></div>
+
+        <div class="row g-5">
+            <div class="col-md-5 col-lg-4 order-md-last">
+                <h4 class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-primary">Resumen del Pedido</span>
+                    <span class="badge bg-primary rounded-pill" id="checkout-item-count">0</span>
+                </h4>
+                <ul class="list-group mb-3" id="checkout-cart-summary">
+                    <li id="checkout-cart-empty" class="list-group-item text-center text-muted">El carrito está vacío.</li>
+                    </ul>
+                <ul class="list-group mb-3" id="checkout-totals-summary" style="display: none;">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Subtotal (<span id="checkout-currency-symbol">CLP</span>)</span>
+                        <strong id="checkout-subtotal">$0</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Despacho (Estimado)</span>
+                        <strong id="checkout-shipping">$4.990</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between fw-bold h5">
+                        <span>Total (<span class="currency-symbol-display">CLP</span>)</span>
+                        <strong id="checkout-total">$4.990</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-md-7 col-lg-8">
+                <div class="card mb-4 client-management-section shadow-sm">
+                    <div class="card-header">
+                        <h4 class="mb-0">1. Datos del Cliente</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="clientSearchInput" class="form-label">Buscar Cliente Existente (por email o nombre)</label>
+                                <input type="text" class="form-control form-control-sm" id="clientSearchInput" placeholder="Escriba para buscar...">
+                                <div id="clientSearchResults" class="client-search-results mt-2" style="display:none;">
+                                    <ul class="list-group list-group-flush" id="clientList"></ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6 align-self-end text-md-end">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="toggleNewClientFormBtn">
+                                    <i class="fas fa-user-plus me-1"></i> Crear Nuevo Cliente
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="selectedClientInfo" class="mt-3 p-3 bg-light border rounded" style="display:none;">
+                            <h6>Cliente Seleccionado:</h6>
+                            <p class="mb-0"><strong>ID:</strong> <span id="selectedClientIdDisplay"></span></p>
+                            <p class="mb-0"><strong>Nombre:</strong> <span id="selectedClientName"></span></p>
+                            <p class="mb-0"><strong>Email:</strong> <span id="selectedClientEmail"></span></p>
+                        </div>
+
+                        <div id="newClientFormContainer" class="mt-3 border-top pt-3" style="display:none;">
+                            <h5>Crear Nuevo Cliente para esta Venta</h5>
+                            <div class="alert alert-info small p-2">
+                                Nota: El ID Cliente debe ser único. La clave será temporal y el cliente debería cambiarla.
+                            </div>
+                            <form id="formNewClient" class="needs-validation" novalidate> {# Formulario para nuevo cliente #}
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label for="newClientId" class="form-label form-label-sm">ID Cliente*</label>
+                                        <input type="number" class="form-control form-control-sm" id="newClientId" required>
+                                        <div class="invalid-feedback">ID de cliente es requerido y debe ser numérico.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="newClientPNombre" class="form-label form-label-sm">Primer Nombre*</label>
+                                        <input type="text" class="form-control form-control-sm" id="newClientPNombre" required>
+                                        <div class="invalid-feedback">Primer nombre es requerido.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="newClientPApellido" class="form-label form-label-sm">Primer Apellido*</label>
+                                        <input type="text" class="form-control form-control-sm" id="newClientPApellido" required>
+                                        <div class="invalid-feedback">Primer apellido es requerido.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="newClientCorreo" class="form-label form-label-sm">Correo*</label>
+                                        <input type="email" class="form-control form-control-sm" id="newClientCorreo" required>
+                                        <div class="invalid-feedback">Correo electrónico válido es requerido.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="newClientClave" class="form-label form-label-sm">Clave Temporal*</label>
+                                        <input type="password" class="form-control form-control-sm" id="newClientClave" required minlength="6">
+                                        <div class="invalid-feedback">Clave temporal de al menos 6 caracteres es requerida.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="newClientSNombre" class="form-label form-label-sm">Segundo Nombre</label>
+                                        <input type="text" class="form-control form-control-sm" id="newClientSNombre">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="newClientSApellido" class="form-label form-label-sm">Segundo Apellido</label>
+                                        <input type="text" class="form-control form-control-sm" id="newClientSApellido">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="newClientTelefono" class="form-label form-label-sm">Teléfono</label>
+                                        <input type="tel" class="form-control form-control-sm" id="newClientTelefono">
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <button type="button" class="btn btn-success btn-sm" id="saveNewClientBtn"><i class="fas fa-save me-1"></i> Guardar Nuevo Cliente</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <form class="needs-validation" novalidate method="post" action="{% url 'core:procesar_pago' %}" id="checkout-form-empleado">
+                    {% csrf_token %}
+                    <input type="hidden" id="hiddenSelectedClientId" name="id_cliente_final"> 
+
+                    <h4 class="mb-3">2. Dirección de Envío (del Cliente)</h4>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="firstName" class="form-label">Nombre Cliente</label>
+                            <input type="text" class="form-control" id="firstName" name="firstName" value="" required>
+                            <div class="invalid-feedback">Se requiere un nombre válido.</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="lastName" class="form-label">Apellidos Cliente</label>
+                            <input type="text" class="form-control" id="lastName" name="lastName" value="" required>
+                            <div class="invalid-feedback">Se requieren apellidos válidos.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="email" class="form-label">Correo Electrónico Cliente</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                             <div class="invalid-feedback">Por favor, ingresa un correo válido.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="address" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="address" name="address" required>
+                            <div class="invalid-feedback">Por favor, ingresa la dirección de envío.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="address2" class="form-label">Dpto / Casa / Oficina <span class="text-muted">(Opcional)</span></label>
+                            <input type="text" class="form-control" id="address2" name="address2">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="region" class="form-label">Región</label>
+                            <select class="form-select" id="region" name="region" required><option value="">Seleccionar...</option><option value="RM">Metropolitana</option></select>
+                            <div class="invalid-feedback">Por favor, selecciona una región válida.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="comuna" class="form-label">Comuna</label>
+                            <select class="form-select" id="comuna" name="comuna" required><option value="">Seleccionar...</option><option value="Puente Alto">Puente Alto</option></select>
+                            <div class="invalid-feedback">Por favor, selecciona una comuna válida.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="zip" class="form-label">Cód. Postal <span class="text-muted">(Opcional)</span></label>
+                            <input type="text" class="form-control" id="zip" name="zip">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h4 class="mb-3">3. Método de Pago Asignado al Cliente</h4>
+                    <div class="my-3">
+                        <div class="form-check payment-method-option" data-payment-method="efectivo"><input id="efectivo" name="paymentMethod" type="radio" class="form-check-input" value="efectivo" required><label class="form-check-label w-100" for="efectivo">Efectivo <small class="text-muted">(Cliente paga contra entrega)</small></label></div>
+                        <div class="form-check payment-method-option" data-payment-method="debito"><input id="debito" name="paymentMethod" type="radio" class="form-check-input" value="debito" required><label class="form-check-label w-100" for="debito">Tarjeta de Débito (Cliente)</label></div>
+                        <div class="form-check payment-method-option" data-payment-method="credito"><input id="credito" name="paymentMethod" type="radio" class="form-check-input" value="credito" required><label class="form-check-label w-100" for="credito">Tarjeta de Crédito (Cliente)</label></div>
+                        <div class="form-check payment-method-option" data-payment-method="transferencia"><input id="transferencia" name="paymentMethod" type="radio" class="form-check-input" value="transferencia" required><label class="form-check-label w-100" for="transferencia">Transferencia Bancaria (Cliente)</label></div>
+                        <div class="form-check payment-method-option" data-payment-method="paypal_empleado"><input id="paypal_empleado" name="paymentMethod" type="radio" class="form-check-input" value="paypal_empleado" required><label class="form-check-label w-100" for="paypal_empleado"><img src="https://www.paypalobjects.com/webstatic/mktg/logo/AM_SbyPP_mc_vs_dc_ae.jpg" alt="PayPal" height="25" style="vertical-align: middle; margin-right: 7px;"> PayPal</label></div>
+                    </div>
+                     <div id="payment-details-efectivo" class="payment-details card card-body bg-light"><p class="mb-0">El cliente pagará en efectivo al momento de recibir el pedido.</p></div>
+                    <div id="payment-details-debito" class="payment-details card card-body bg-light"><p class="mb-0">Se simulará el pago con tarjeta de débito del cliente.</p></div>
+                    <div id="payment-details-credito" class="payment-details card card-body bg-light"><p class="mb-0">Se simulará el pago con tarjeta de crédito del cliente.</p></div>
+                    <div id="payment-details-transferencia" class="payment-details card card-body bg-light"><p>Instrucciones para transferencia: Banco Ferremas, Cta: 123-456-7890</p></div>
+                    <div id="payment-details-paypal_empleado" class="payment-details card card-body bg-light"><p class="mb-2 text-center">Se utilizará PayPal.</p><div id="paypal-button-container-empleado" class="mx-auto" style="max-width: 350px;"></div></div>
+
+                    <hr class="my-4">
+
+                    <button class="w-100 btn btn-primary btn-lg" type="button" id="submit-order-button-empleado">
+                        <i class="fas fa-cash-register me-2"></i>Registrar Venta y Procesar Pago
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock content %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=TU_CLIENT_ID_DE_PAYPAL&currency=USD&disable-funding=credit,card"></script> #}
+
+<script>
+    const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}";
+    const API_CRUD_URL_FROM_DJANGO = "{{ api_crud_url_js|default:''|escapejs }}";
+    const MEDIA_URL_FROM_DJANGO = "{{ MEDIA_URL|default:'/media/'|escapejs }}";
+    const IS_EMPLOYEE_CHECKOUT = {% if is_employee_checkout %}true{% else %}false{% endif %};
+    const USER_IS_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
+    const CSRF_TOKEN = "{{ csrf_token }}";
+</script>
+
+<script src="{% static 'core/js/main.js' %}"></script>
+<script src="{% static 'core/js/empleado.js' %}"></script>
