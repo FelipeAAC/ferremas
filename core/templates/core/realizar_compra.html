@@ -3,35 +3,95 @@
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title|default:"Finalizar Compra" }} - Ferremas</title>
-    
+
     <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
-        body { display: flex; flex-direction: column; min-height: 100vh; padding-top: 56px; background-color: #f8f9fa; }
-        .main-content { flex-grow: 1; padding-top: 1.5rem; padding-bottom: 2rem; }
-        .footer { background-color: #343a40; color: white; padding: 2rem 0; text-align: center; flex-shrink: 0; }
-        .footer a { color: #adb5bd; }
-        .footer a:hover { color: #ffffff; }
-        .navbar-brand i.fa-tools { color: #ffc107; }
-        .cart-preview-item-image { width: 50px; height: 50px; object-fit: cover; margin-right: 0.75rem; border-radius: 0.25rem; border: 1px solid #eee; }
-        .dropdown-menu-end[aria-labelledby="cartDropdown"] { min-width: 350px !important; max-height: 450px; }
-        #cart-preview-items-scrollable { max-height: 300px; overflow-y: auto; }
-        .cart-preview-item .btn-sm { padding: 0.15rem 0.4rem; font-size: 0.75rem; line-height: 1.2; }
-        .cart-preview-item .item-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.2em; max-height: 2.4em; }
-        .alert-container { min-height: 50px; }
-        .order-summary-img { width: 50px; height: 50px; object-fit: cover; border-radius: .25rem; }
-        .payment-method-option { padding: 1rem; border: 1px solid #dee2e6; border-radius: .375rem; margin-bottom: 0.5rem; cursor: pointer; }
-        .payment-method-option:hover, .payment-method-option.active { background-color: #e9ecef; }
-        .payment-details { display: none; margin-top: 1rem; padding: 1rem; background-color: #f8f9fa; border-radius: .375rem; }
-        .payment-details.active { display: block; }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 56px;
+            background-color: #f8f9fa;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+        }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .footer a {
+            color: #adb5bd;
+        }
+
+        .footer a:hover {
+            color: #ffffff;
+        }
+
+        .navbar-brand i.fa-tools {
+            color: #ffc107;
+        }
+
+        .payment-method-option {
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: .375rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .payment-method-option:hover,
+        .payment-method-option.active {
+            background-color: #e9ecef;
+        }
+
+        .payment-details {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: .375rem;
+        }
+
+        .payment-details.active {
+            display: block;
+        }
+
+        #paypal-button-container .paypal-buttons {}
+
+        .alert-container {
+            min-height: 50px;
+        }
+
+        .order-summary-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: .25rem;
+        }
     </style>
+
+    <script src="https://www.paypal.com/sdk/js?client-id=AcYLyAp5Ivu4pAsjK6_esqAbDquQBYw-X-GIzWVlDvL8gMaq3kASWR-_p7jpwZuBcAhca3lEGXLALEf6&currency=CLP" data-sdk-integration-source="developer-studio"></script>
 </head>
+
 <body class="d-flex flex-column">
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
@@ -39,41 +99,60 @@
             <a class="navbar-brand" href="{% url 'core:index' %}">
                 <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavContent" aria-controls="navbarNavContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavContent"
+                aria-controls="navbarNavContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNavContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'core:index' %}">Inicio</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+                            href="{% url 'core:index' %}">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'productos' %}active{% endif %}" href="{% url 'core:productos' %}">Productos</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'productos' %}active{% endif %}"
+                            href="{% url 'core:productos' %}">Productos</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item me-3"><span id="user-greeting" class="navbar-text"></span></li>
-                    <li class="nav-item" id="profile-link" style="display: none;"><a class="nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}" href="{% url 'core:perfil' %}"><i class="fas fa-user-circle me-1"></i>Mi Perfil</a></li>
-                    <li class="nav-item" id="login-link"><a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'core:login' %}">Login</a></li>
-                    <li class="nav-item" id="register-link"><a class="nav-link {% if request.resolver_match.url_name == 'registro' %}active{% endif %}" href="{% url 'core:registro' %}">Registro</a></li>
-                    <li class="nav-item" id="logout-link" style="display: none;"><a class="nav-link" href="#">Logout</a></li>
+                    <li class="nav-item" id="profile-link" style="display: none;"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+                            href="{% url 'core:perfil' %}"><i class="fas fa-user-circle me-1"></i>Mi Perfil</a></li>
+                    <li class="nav-item" id="login-link"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+                            href="{% url 'core:login' %}">Login</a></li>
+                    <li class="nav-item" id="register-link"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'registro' %}active{% endif %}"
+                            href="{% url 'core:registro' %}">Registro</a></li>
+                    <li class="nav-item" id="logout-link" style="display: none;"><a class="nav-link" href="#">Logout</a>
+                    </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'carrito' %}active{% endif %}" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'carrito' %}active{% endif %}"
+                            href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-shopping-cart"></i> Carrito
-                            <span class="badge bg-danger rounded-pill" id="cart-count-badge" style="display: none;">0</span>
+                            <span class="badge bg-danger rounded-pill" id="cart-count-badge"
+                                style="display: none;">0</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown" id="cart-preview-container">
+                        <ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown"
+                            id="cart-preview-container">
                             <div id="cart-preview-items-scrollable"></div>
-                            <li id="cart-preview-empty" class="text-center p-2" style="display: block;">Tu carrito está vacío.</li>
-                            <div id="cart-preview-summary" style="display:none;"> 
-                                <li><hr class="dropdown-divider" id="cart-preview-divider"></li>
-                                <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row" id="cart-preview-subtotal-row">
+                            <li id="cart-preview-empty" class="text-center p-2" style="display: block;">Tu carrito está
+                                vacío.</li>
+                            <div id="cart-preview-summary" style="display:none;">
+                                <li>
+                                    <hr class="dropdown-divider" id="cart-preview-divider">
+                                </li>
+                                <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row"
+                                    id="cart-preview-subtotal-row">
                                     <strong>Subtotal:</strong>
                                     <span id="cart-preview-subtotal">$0.00</span>
                                 </li>
                                 <li id="cart-preview-buttons">
-                                    <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-2">Ver Carrito Completo</a>
-                                    <a href="#" id="go-to-checkout-btn-preview" class="btn btn-success btn-sm w-100">Ir a Pagar</a>
+                                    <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-2">Ver
+                                        Carrito Completo</a>
+                                    <a href="#" id="go-to-checkout-btn-preview" class="btn btn-success btn-sm w-100">Ir
+                                        a Pagar</a>
                                 </li>
                             </div>
                         </ul>
@@ -97,19 +176,20 @@
                         <span class="badge bg-primary rounded-pill" id="checkout-item-count">0</span>
                     </h4>
                     <ul class="list-group mb-3" id="checkout-cart-summary">
-                        <li id="checkout-cart-empty" class="list-group-item text-center text-muted">Tu carrito está vacío.</li>
+                        <li id="checkout-cart-empty" class="list-group-item text-center text-muted">Tu carrito está
+                            vacío.</li>
                     </ul>
                     <ul class="list-group mb-3" id="checkout-totals-summary" style="display: none;">
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>Subtotal (CLP)</span>
+                            <span>Subtotal (<span id="checkout-currency-symbol">CLP</span>)</span>
                             <strong id="checkout-subtotal">$0</strong>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Despacho (Estimado)</span>
-                            <strong id="checkout-shipping">$4.990</strong> {# Puedes hacerlo dinámico más adelante #}
+                            <strong id="checkout-shipping">$4.990</strong>
                         </li>
                         <li class="list-group-item d-flex justify-content-between fw-bold h5">
-                            <span>Total (CLP)</span>
+                            <span>Total (<span class="currency-symbol-display">CLP</span>)</span>
                             <strong id="checkout-total">$4.990</strong>
                         </li>
                     </ul>
@@ -122,39 +202,48 @@
                 </div>
 
                 <div class="col-md-7 col-lg-8">
-                    <form class="needs-validation" novalidate method="post" action="{% url 'core:procesar_pago' %}" id="checkout-form">
+                    <form class="needs-validation" novalidate method="post" action="{% url 'core:procesar_pago' %}"
+                        id="checkout-form">
                         {% csrf_token %}
                         <h4 class="mb-3">Dirección de Envío</h4>
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <label for="firstName" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="firstName" name="firstName" placeholder="" value="" required>
+                                <input type="text" class="form-control" id="firstName" name="firstName" placeholder=""
+                                    value="" required>
                                 <div class="invalid-feedback">Se requiere un nombre válido.</div>
                             </div>
                             <div class="col-sm-6">
                                 <label for="lastName" class="form-label">Apellidos</label>
-                                <input type="text" class="form-control" id="lastName" name="lastName" placeholder="" value="" required>
+                                <input type="text" class="form-control" id="lastName" name="lastName" placeholder=""
+                                    value="" required>
                                 <div class="invalid-feedback">Se requieren apellidos válidos.</div>
                             </div>
                             <div class="col-12">
-                                <label for="email" class="form-label">Correo Electrónico <span class="text-muted">(Opcional)</span></label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="tu@ejemplo.com">
+                                <label for="email" class="form-label">Correo Electrónico <span
+                                        class="text-muted">(Opcional para la cuenta, requerido para
+                                        confirmación)</span></label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                    placeholder="tu@ejemplo.com">
                             </div>
                             <div class="col-12">
                                 <label for="address" class="form-label">Dirección</label>
-                                <input type="text" class="form-control" id="address" name="address" placeholder="Av. Siempreviva 123" required>
+                                <input type="text" class="form-control" id="address" name="address"
+                                    placeholder="Av. Siempreviva 123" required>
                                 <div class="invalid-feedback">Por favor, ingresa tu dirección de envío.</div>
                             </div>
                             <div class="col-12">
-                                <label for="address2" class="form-label">Dpto / Casa / Oficina <span class="text-muted">(Opcional)</span></label>
-                                <input type="text" class="form-control" id="address2" name="address2" placeholder="Depto. 101">
+                                <label for="address2" class="form-label">Dpto / Casa / Oficina <span
+                                        class="text-muted">(Opcional)</span></label>
+                                <input type="text" class="form-control" id="address2" name="address2"
+                                    placeholder="Depto. 101">
                             </div>
                             <div class="col-md-5">
                                 <label for="region" class="form-label">Región</label>
                                 <select class="form-select" id="region" name="region" required>
                                     <option value="">Seleccionar...</option>
                                     <option value="RM">Metropolitana de Santiago</option>
-                                    </select>
+                                </select>
                                 <div class="invalid-feedback">Por favor, selecciona una región válida.</div>
                             </div>
                             <div class="col-md-4">
@@ -162,11 +251,12 @@
                                 <select class="form-select" id="comuna" name="comuna" required>
                                     <option value="">Seleccionar...</option>
                                     <option value="Puente Alto">Puente Alto</option>
-                                    </select>
+                                </select>
                                 <div class="invalid-feedback">Por favor, selecciona una comuna válida.</div>
                             </div>
                             <div class="col-md-3">
-                                <label for="zip" class="form-label">Cód. Postal <span class="text-muted">(Opcional)</span></label>
+                                <label for="zip" class="form-label">Cód. Postal <span
+                                        class="text-muted">(Opcional)</span></label>
                                 <input type="text" class="form-control" id="zip" name="zip" placeholder="">
                             </div>
                         </div>
@@ -176,36 +266,49 @@
                         <h4 class="mb-3">Método de Pago</h4>
                         <div class="my-3">
                             <div class="form-check payment-method-option" data-payment-method="efectivo">
-                                <input id="efectivo" name="paymentMethod" type="radio" class="form-check-input" value="efectivo" required>
-                                <label class="form-check-label w-100" for="efectivo">Efectivo <small class="text-muted">(Pago contra entrega)</small></label>
+                                <input id="efectivo" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="efectivo" required>
+                                <label class="form-check-label w-100" for="efectivo">Efectivo <small
+                                        class="text-muted">(Pago contra entrega)</small></label>
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="debito">
-                                <input id="debito" name="paymentMethod" type="radio" class="form-check-input" value="debito" required>
+                                <input id="debito" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="debito" required>
                                 <label class="form-check-label w-100" for="debito">Tarjeta de Débito</label>
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="credito">
-                                <input id="credito" name="paymentMethod" type="radio" class="form-check-input" value="credito" required>
+                                <input id="credito" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="credito" required>
                                 <label class="form-check-label w-100" for="credito">Tarjeta de Crédito</label>
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="transferencia">
-                                <input id="transferencia" name="paymentMethod" type="radio" class="form-check-input" value="transferencia" required>
+                                <input id="transferencia" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="transferencia" required>
                                 <label class="form-check-label w-100" for="transferencia">Transferencia Bancaria</label>
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="paypal">
-                                <input id="paypal" name="paymentMethod" type="radio" class="form-check-input" value="paypal" required>
-                                <label class="form-check-label w-100" for="paypal">PayPal</label>
+                                <input id="paypal" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="paypal" required>
+                                <label class="form-check-label w-100" for="paypal">
+                                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/AM_SbyPP_mc_vs_dc_ae.jpg"
+                                        alt="PayPal" height="25" style="vertical-align: middle; margin-right: 7px;">
+                                    PayPal
+                                </label>
                             </div>
                         </div>
 
                         <div id="payment-details-efectivo" class="payment-details card card-body bg-light">
-                            <p class="mb-0">Pagarás en efectivo al momento de recibir tu pedido. Por favor, ten el monto exacto si es posible.</p>
+                            <p class="mb-0">Pagarás en efectivo al momento de recibir tu pedido. Por favor, ten el monto
+                                exacto si es posible.</p>
                         </div>
                         <div id="payment-details-debito" class="payment-details card card-body bg-light">
-                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu tarjeta de débito.</p>
-                            </div>
+                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu
+                                tarjeta de débito.</p>
+                        </div>
                         <div id="payment-details-credito" class="payment-details card card-body bg-light">
-                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu tarjeta de crédito.</p>
-                            </div>
+                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu
+                                tarjeta de crédito.</p>
+                        </div>
                         <div id="payment-details-transferencia" class="payment-details card card-body bg-light">
                             <p>Por favor, realiza la transferencia a la siguiente cuenta:</p>
                             <ul class="list-unstyled">
@@ -219,11 +322,14 @@
                             <p class="mb-0"><small>Tu pedido será procesado una vez confirmado el pago.</small></p>
                         </div>
                         <div id="payment-details-paypal" class="payment-details card card-body bg-light">
-                            <p class="mb-1">Serás redirigido a PayPal para completar tu pago de forma segura.</p>
-                            <div id="paypal-button-container" class="my-3">
-                                </div>
+                            <p class="mb-2 text-center">Serás redirigido a PayPal para completar tu pago de forma
+                                segura.</p>
+                            <div id="paypal-button-container" class="mx-auto" style="max-width: 350px;">
+                            </div>
+                            <p class="mt-2 mb-0 text-center"><small class="text-muted">Al hacer clic en los botones de
+                                    PayPal, serás llevado al sitio seguro de PayPal.</small></p>
                         </div>
-                        
+
                         <hr class="my-4">
 
                         <button class="w-100 btn btn-primary btn-lg" type="submit" id="submit-order-button">
@@ -235,7 +341,7 @@
         </div>
     </main>
 
-    <footer class="footer"> 
+    <footer class="footer">
         <div class="container">
             <p class="mb-1">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
             <p class="mb-0">
@@ -246,11 +352,14 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
     <script>
         const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}"; 
     </script>
     <script src="{% static 'core/js/main.js' %}"></script>
 </body>
+
 </html>

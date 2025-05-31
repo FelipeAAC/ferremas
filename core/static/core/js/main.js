@@ -1,16 +1,7 @@
-const API_AUTH_BASE_URL =
-    (typeof API_AUTH_URL_FROM_DJANGO !== "undefined" && API_AUTH_URL_FROM_DJANGO)
-        ? API_AUTH_URL_FROM_DJANGO
-        : "http://127.0.0.1:8002";
+document.addEventListener('DOMContentLoaded', function () {
+    const API_AUTH_BASE_URL = (typeof API_AUTH_URL_FROM_DJANGO !== "undefined" && API_AUTH_URL_FROM_DJANGO) ? API_AUTH_URL_FROM_DJANGO : "http://127.0.0.1:8002";
+    const API_CRUD_BASE_URL = (typeof API_CRUD_URL_FROM_DJANGO !== 'undefined' && API_CRUD_URL_FROM_DJANGO) ? API_CRUD_URL_FROM_DJANGO : "http://127.0.0.1:8001";
 
-const API_CRUD_BASE_URL = 
-    (typeof API_CRUD_URL_FROM_DJANGO !== 'undefined' && API_CRUD_URL_FROM_DJANGO)
-        ? API_CRUD_URL_FROM_DJANGO 
-        : "http://127.0.0.1:8001"; 
-
-const MEDIA_URL = "/media/";
-
-document.addEventListener("DOMContentLoaded", function () {
     const userGreetingElement = document.getElementById('user-greeting');
     const loginLink = document.getElementById('login-link');
     const registerLink = document.getElementById('register-link');
@@ -18,18 +9,212 @@ document.addEventListener("DOMContentLoaded", function () {
     const profileLink = document.getElementById('profile-link');
     const cartCountBadge = document.getElementById('cart-count-badge');
 
+    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
+    const paymentDetailsSections = document.querySelectorAll('.payment-details');
+    const checkoutForm = document.getElementById('checkout-form');
+    const submitOrderButton = document.getElementById('submit-order-button');
+    const checkoutAlertContainer = document.getElementById('checkout-alert-container');
+    const paypalButtonDOMContainer = document.getElementById('paypal-button-container');
+    const orderTotalElement = document.getElementById('checkout-total');
+    const currencySymbolElement = document.getElementById('checkout-currency-symbol');
+
+    let PAYPAL_CURRENCY_CODE = 'USD';
+
+    function showCheckoutAlert(message, type = 'danger') {
+        if (checkoutAlertContainer) {
+            checkoutAlertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+        }
+    }
+
+    function getOrderAmountDetails() {
+        let amountValue = '0.01'; 
+        let currencyCode = 'USD';
+
+        if (currencySymbolElement && currencySymbolElement.textContent) {
+            const pageCurrency = currencySymbolElement.textContent.trim().toUpperCase();
+            if (['USD', 'CLP', 'EUR'].includes(pageCurrency)) {
+                determinedCurrencyCode = pageCurrency;
+            }
+        }
+
+        PAYPAL_CURRENCY_CODE = determinedCurrencyCode;
+
+        if (orderTotalElement && orderTotalElement.textContent) {
+            let rawTotalText = orderTotalElement.textContent;
+            let cleanedTotal;
+            if (PAYPAL_CURRENCY_CODE === 'CLP') {
+                cleanedTotal = rawTotalText.replace(/[$.CLP\s]/g, '');
+                let parsedVal = parseInt(cleanedTotal, 10);
+                if (!isNaN(parsedVal) && parsedVal > 0) {
+                    amountValue = String(parsedVal);
+                }
+            } else {
+                cleanedTotal = rawTotalText.replace(/[^\d,.]/g, '');
+                if (cleanedTotal.includes(',')) {
+                    if (cleanedTotal.lastIndexOf(',') > cleanedTotal.lastIndexOf('.')) {
+                        cleanedTotal = cleanedTotal.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        cleanedTotal = cleanedTotal.replace(/,/g, '');
+                    }
+                }
+                let parsedVal = parseFloat(cleanedTotal);
+                if (!isNaN(parsedVal) && parsedVal > 0) {
+                    amountValue = parsedVal.toFixed(2);
+                }
+            }
+        }
+
+        if (parseFloat(amountValue) <= 0) {
+            console.warn(`Parsed order total is zero or invalid for ${PAYPAL_CURRENCY_CODE}. Using fallback for PayPal.`);
+            showCheckoutAlert(`El total del pedido es inválido (${amountValue} ${PAYPAL_CURRENCY_CODE}). Contacte a soporte.`, 'warning');
+            amountValue = (PAYPAL_CURRENCY_CODE === 'CLP') ? '1' : '0.01';
+        }
+
+        console.log("PayPal Amount Details:", { value: amountValue, currency: PAYPAL_CURRENCY_CODE });
+        return { value: amountValue, currency: PAYPAL_CURRENCY_CODE };
+    }
+
+    function initPayPalButton() {
+        if (!paypalButtonDOMContainer || typeof paypal === 'undefined') {
+            console.error('PayPal SDK not loaded or button container not found.');
+            showCheckoutAlert('Error al cargar la opción de pago PayPal. Intente recargar la página.', 'danger');
+            return;
+        }
+
+        paypalButtonDOMContainer.innerHTML = '';
+        if (checkoutAlertContainer && checkoutAlertContainer.querySelector('.alert-info.paypal-loading')) {
+            checkoutAlertContainer.innerHTML = '';
+        }
+        const loadingAlert = document.createElement('div');
+        loadingAlert.className = 'alert alert-info paypal-loading';
+        loadingAlert.textContent = 'Cargando botones de PayPal...';
+        if (checkoutAlertContainer) checkoutAlertContainer.appendChild(loadingAlert);
+
+
+        const amountDetails = getOrderAmountDetails();
+        if (parseFloat(amountDetails.value) <= 0) {
+            console.error("Order amount for PayPal is zero or negative. Cannot render buttons.");
+            showCheckoutAlert(`El total del pedido es inválido. No se pueden mostrar los botones de PayPal.`, 'danger');
+            paypalButtonDOMContainer.innerHTML = '<p class="text-danger text-center">Error: El total del pedido es inválido.</p>';
+            if (checkoutAlertContainer && loadingAlert.parentNode === checkoutAlertContainer) checkoutAlertContainer.removeChild(loadingAlert);
+            return;
+        }
+
+        try {
+            paypal.Buttons({
+                createOrder: function (data, actions) {
+                    console.log("Creating PayPal order with:", amountDetails);
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: amountDetails.value,
+                                currency_code: amountDetails.currency
+                            },
+                            description: "Compra en Ferremas"
+                        }]
+                    });
+                },
+                onApprove: function (data, actions) {
+                    console.log("PayPal onApprove data:", data);
+                    if (submitOrderButton) submitOrderButton.disabled = true;
+                    paypalButtonDOMContainer.innerHTML = '<p class="text-center my-3"><i class="fas fa-spinner fa-spin me-2"></i>Procesando tu pago, por favor espera...</p>';
+
+                    return actions.order.capture().then(function (details) {
+                        console.log('PayPal Capture Details:', details);
+
+                        if (checkoutForm) {
+                            let paypalOrderIDInput = checkoutForm.querySelector('input[name="paypal_order_id"]');
+                            if (!paypalOrderIDInput) {
+                                paypalOrderIDInput = document.createElement('input');
+                                paypalOrderIDInput.type = 'hidden';
+                                paypalOrderIDInput.name = 'paypal_order_id';
+                                checkoutForm.appendChild(paypalOrderIDInput);
+                            }
+                            paypalOrderIDInput.value = details.id;
+
+                            let paymentMethodNameInput = checkoutForm.querySelector('input[name="payment_method_name"]');
+                            if (!paymentMethodNameInput) {
+                                paymentMethodNameInput = document.createElement('input');
+                                paymentMethodNameInput.type = 'hidden';
+                                paymentMethodNameInput.name = 'payment_method_name';
+                                checkoutForm.appendChild(paymentMethodNameInput);
+                            }
+                            paymentMethodNameInput.value = 'paypal';
+
+                            const paypalRadio = document.getElementById('paypal');
+                            if (paypalRadio) paypalRadio.checked = true;
+
+                            showCheckoutAlert('¡Pago con PayPal aprobado! Finalizando tu pedido...', 'success');
+
+                            alert("Pago con PayPal aprobado (Cliente): " + details.id + "\nIMPORTANTE: Se requiere verificación en SERVIDOR.");
+                        } else {
+                            showCheckoutAlert('Error: No se encontró el formulario de checkout para enviar datos de PayPal.', 'danger');
+                        }
+                    }).catch(err => {
+                        console.error('Error capturing PayPal order:', err);
+                        showCheckoutAlert('Ocurrió un error al capturar tu pago con PayPal. Inténtalo de nuevo.', 'danger');
+                        if (submitOrderButton) submitOrderButton.disabled = false;
+                        paypalButtonDOMContainer.innerHTML = '';
+                        initPayPalButton();
+                    });
+                },
+                onError: function (err) {
+                    console.error('Error en el flujo de PayPal SDK:', err);
+                    showCheckoutAlert('Hubo un error con PayPal. Por favor, revisa los detalles o intenta con otro método de pago.', 'danger');
+                    if (submitOrderButton) submitOrderButton.disabled = false;
+                    paypalButtonDOMContainer.innerHTML = '';
+                },
+                onCancel: function (data) {
+                    console.log('Pago con PayPal cancelado por el usuario:', data);
+                    showCheckoutAlert('Has cancelado el proceso de pago con PayPal.', 'info');
+                    if (submitOrderButton) submitOrderButton.disabled = false;
+                },
+                style: {
+                    layout: 'vertical',
+                    color: 'gold',
+                    shape: 'rect',
+                    label: 'paypal',
+                    height: 40
+                }
+            }).render(paypalButtonDOMContainer).then(() => {
+                if (checkoutAlertContainer && loadingAlert.parentNode === checkoutAlertContainer) {
+                    checkoutAlertContainer.removeChild(loadingAlert);
+                }
+                console.log("PayPal Buttons rendered.");
+            }).catch(err => {
+                console.error('Error al renderizar botones de PayPal:', err);
+                if (paypalButtonDOMContainer) {
+                    paypalButtonDOMContainer.innerHTML = '<p class="text-danger text-center">Error al cargar botones de PayPal.</p>';
+                }
+                showCheckoutAlert('No se pudieron cargar los botones de PayPal. Por favor, recarga la página o selecciona otro método.', 'warning');
+                if (checkoutAlertContainer && loadingAlert.parentNode === checkoutAlertContainer) checkoutAlertContainer.removeChild(loadingAlert);
+            });
+        } catch (error) {
+            console.error("Error general iniciando PayPal Buttons:", error);
+            if (paypalButtonDOMContainer) {
+                paypalButtonDOMContainer.innerHTML = '<p class="text-danger text-center">Error crítico al iniciar PayPal.</p>';
+            }
+            showCheckoutAlert('Ocurrió un error inesperado con la configuración de PayPal.', 'danger');
+            if (checkoutAlertContainer && loadingAlert.parentNode === checkoutAlertContainer) checkoutAlertContainer.removeChild(loadingAlert);
+        }
+    }
+
     function logoutUser() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('token_type');
-        localStorage.removeItem('shoppingCart'); 
-        updateAuthUI(); 
-        renderCartPreview(); 
-        updateCartCount();   
-        
+        localStorage.removeItem('shoppingCart');
+        updateAuthUI();
+        renderCartPreview();
+        updateCartCount();
+
         if (window.location.pathname !== "/" && !window.location.pathname.includes('/login/')) {
-             window.location.href = '/';
+            window.location.href = '/';
         } else if (window.location.pathname.includes('/login/')) {
-        } else { 
+        } else {
             window.location.reload();
         }
     }
@@ -41,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (registerLink) registerLink.style.display = 'none';
             if (logoutLink) logoutLink.style.display = 'inline';
             if (profileLink) profileLink.style.display = 'inline';
-            fetchUserProfile(token); 
+            fetchUserProfile(token);
         } else {
             if (userGreetingElement) userGreetingElement.textContent = '';
             if (loginLink) loginLink.style.display = 'inline';
@@ -52,7 +237,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function fetchUserProfile(token) {
-        console.log("fetchUserProfile llamado con token.");
         try {
             const response = await fetch(`${API_AUTH_BASE_URL}/users/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -60,19 +244,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!response.ok) {
                 console.warn(`Error al obtener perfil: ${response.status}. Deslogueando.`);
-                logoutUser(); 
-                return; 
+                logoutUser();
+                return;
             }
 
             const userData = await response.json();
-            console.log("Datos del usuario recibidos:", userData);
-
             if (userGreetingElement) {
                 userGreetingElement.textContent = `Hola, ${userData.p_nombre || userData.correo}!`;
             }
 
             if (window.location.pathname.includes("/perfil/")) {
-                console.log("Actualizando campos del perfil...");
                 const profileWelcome = document.getElementById("profile-welcome-name");
                 const profileIdCliente = document.getElementById("profile-id_cliente");
                 const profilePNombre = document.getElementById("profile-p_nombre");
@@ -81,26 +262,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 const profileSApellido = document.getElementById("profile-s_apellido");
                 const profileCorreo = document.getElementById("profile-correo");
                 const profileTelefono = document.getElementById("profile-telefono");
-                
-                if (profileWelcome) profileWelcome.textContent = userData.p_nombre || "Usuario"; else console.warn("Elemento profile-welcome-name no encontrado");
-                if (profileIdCliente) profileIdCliente.textContent = userData.id_cliente || 'N/A'; else console.warn("Elemento profile-id_cliente no encontrado");
-                
-                if (profilePNombre) profilePNombre.value = userData.p_nombre || "No especificado"; else console.warn("Elemento profile-p_nombre no encontrado");
-                if (profileSNombre) profileSNombre.value = userData.s_nombre || ""; else console.warn("Elemento profile-s_nombre no encontrado");
-                if (profilePApellido) profilePApellido.value = userData.p_apellido || "No especificado"; else console.warn("Elemento profile-p_apellido no encontrado");
-                if (profileSApellido) profileSApellido.value = userData.s_apellido || ""; else console.warn("Elemento profile-s_apellido no encontrado");
-                if (profileCorreo) profileCorreo.value = userData.correo || "No especificado"; else console.warn("Elemento profile-correo no encontrado");
-                if (profileTelefono) profileTelefono.value = userData.telefono || "No especificado"; else console.warn("Elemento profile-telefono no encontrado");
-                
+
+                if (profileWelcome) profileWelcome.textContent = userData.p_nombre || "Usuario";
+                if (profileIdCliente) profileIdCliente.textContent = userData.id_cliente || 'N/A';
+                if (profilePNombre) profilePNombre.value = userData.p_nombre || "";
+                if (profileSNombre) profileSNombre.value = userData.s_nombre || "";
+                if (profilePApellido) profilePApellido.value = userData.p_apellido || "";
+                if (profileSApellido) profileSApellido.value = userData.s_apellido || "";
+                if (profileCorreo) profileCorreo.value = userData.correo || "";
+                if (profileTelefono) profileTelefono.value = userData.telefono || "";
+
                 if (userData.id_cliente) {
-                    console.log("Llamando a fetchUserOrders con id_cliente:", userData.id_cliente);
-                    fetchUserOrders(userData.id_cliente); 
+                    fetchUserOrders(userData.id_cliente);
                 } else {
-                    console.warn("No se encontró id_cliente en userData para cargar pedidos.");
                     const pedidosEnCursoContainer = document.getElementById('pedidos-en-curso-container');
                     const historialPedidosContainer = document.getElementById('historial-pedidos-container');
-                    if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = '<p class="text-muted">No se pudo cargar el ID del cliente para ver los pedidos.</p>';
-                    if(historialPedidosContainer) historialPedidosContainer.innerHTML = '<p class="text-muted">No se pudo cargar el ID del cliente para ver los pedidos.</p>';
+                    if (pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = '<p class="text-muted">No se pudo cargar el ID del cliente.</p>';
+                    if (historialPedidosContainer) historialPedidosContainer.innerHTML = '<p class="text-muted">No se pudo cargar el ID del cliente.</p>';
                 }
             }
         } catch (error) {
@@ -108,101 +286,86 @@ document.addEventListener("DOMContentLoaded", function () {
             if (window.location.pathname.includes("/perfil/")) {
                 const profileDetailsContainer = document.getElementById("profile-details-container");
                 if (profileDetailsContainer) {
-                    profileDetailsContainer.innerHTML = '<p class="text-danger text-center">Error al cargar los datos del perfil. Intenta recargar la página.</p>';
+                    profileDetailsContainer.innerHTML = '<p class="text-danger text-center">Error al cargar los datos del perfil.</p>';
                 }
             }
         }
     }
 
     async function fetchUserOrders(idCliente) {
-        console.log(`fetchUserOrders llamado para cliente ID: ${idCliente}`);
         const pedidosEnCursoContainer = document.getElementById('pedidos-en-curso-container');
         const historialPedidosContainer = document.getElementById('historial-pedidos-container');
         const noPedidosEnCursoMsg = document.getElementById('no-pedidos-en-curso');
         const noHistorialPedidosMsg = document.getElementById('no-historial-pedidos');
 
         if (!pedidosEnCursoContainer || !historialPedidosContainer || !noPedidosEnCursoMsg || !noHistorialPedidosMsg) {
-            console.warn("Contenedores de pedidos no encontrados en la página de perfil. No se pueden mostrar los pedidos.");
             return;
         }
 
         noPedidosEnCursoMsg.style.display = 'none';
         noHistorialPedidosMsg.style.display = 'none';
-        pedidosEnCursoContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2">Cargando pedidos en curso...</p></div>';
-        historialPedidosContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2">Cargando historial de pedidos...</p></div>';
+        pedidosEnCursoContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"></div><p>Cargando...</p></div>';
+        historialPedidosContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"></div><p>Cargando...</p></div>';
 
         try {
             const effectiveCrudUrl = API_CRUD_BASE_URL;
             const url = `${effectiveCrudUrl}/clientes/${idCliente}/pedidos`;
-            console.log("Intentando obtener pedidos desde:", url);
-
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`, 
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                     'Content-Type': 'application/json'
                 }
             });
-            
-            console.log("Respuesta de API Pedidos - Status:", response.status);
-            const responseText = await response.text();
-            console.log("Respuesta de API Pedidos - Texto:", responseText);
 
+            const responseText = await response.text();
 
             if (!response.ok) {
-                let errorDetail = "Error desconocido al cargar pedidos.";
-                try {
-                    const errorData = JSON.parse(responseText);
-                    errorDetail = errorData.detail || errorDetail;
-                } catch (e) {
-                    errorDetail = responseText || errorDetail;
-                }
+                let errorDetail = "Error desconocido.";
+                try { const errorData = JSON.parse(responseText); errorDetail = errorData.detail || errorDetail; }
+                catch (e) { errorDetail = responseText || errorDetail; }
                 throw new Error(`Error ${response.status}: ${errorDetail}`);
             }
 
             const pedidos = JSON.parse(responseText);
-            console.log("Pedidos recibidos:", pedidos);
-            
-            pedidosEnCursoContainer.innerHTML = ''; 
-            historialPedidosContainer.innerHTML = ''; 
+
+            pedidosEnCursoContainer.innerHTML = '';
+            historialPedidosContainer.innerHTML = '';
             let hayPedidosEnCurso = false;
             let hayPedidosEnHistorial = false;
 
             if (!pedidos || pedidos.length === 0) {
-                console.log("No se encontraron pedidos para el cliente.");
-                if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block';
-                if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block';
+                if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block';
+                if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block';
                 return;
             }
-            
-            const estadosEnCursoIDs = [1, 2, 3, 4]; 
+
+            const estadosEnCursoIDs = [1, 2, 3, 4];
 
             pedidos.forEach(pedido => {
                 const esPedidoEnCurso = estadosEnCursoIDs.includes(pedido.id_estado_pedido);
-                const fechaPedidoFormateada = pedido.fecha_pedido ? new Date(pedido.fecha_pedido).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible';
+                const fechaPedidoFormateada = pedido.fecha_pedido ? new Date(pedido.fecha_pedido).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
                 const totalPedidoFormateado = (parseFloat(pedido.total_pedido) || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
-                const estadoDescripcion = pedido.estado_descripcion || 'Estado desconocido';
+                const estadoDescripcion = pedido.estado_descripcion || 'Desconocido';
 
                 const detallesHTML = pedido.detalles && pedido.detalles.length > 0 ?
                     pedido.detalles.map(detalle => {
-                        let imagenSrc = '/static/core/images/placeholder.png'; 
+                        let imagenSrc = '/static/core/images/placeholder.png';
                         if (detalle.imagen_url) {
-                            imagenSrc = detalle.imagen_url.startsWith('http') ? detalle.imagen_url : (effectiveCrudUrl.endsWith('/') ? effectiveCrudUrl.slice(0,-1) : effectiveCrudUrl) + MEDIA_URL + detalle.imagen_url;
+                            imagenSrc = detalle.imagen_url.startsWith('http') ? detalle.imagen_url : ((typeof MEDIA_URL !== 'undefined' ? MEDIA_URL : '/media/') + detalle.imagen_url);
                         }
                         return `
                         <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 border-bottom">
                             <div class="d-flex align-items-center">
-                                <img src="${imagenSrc}" 
-                                     alt="${detalle.nombre_producto || 'Producto'}" class="order-item-img"
-                                     onerror="this.onerror=null;this.src='/static/core/images/placeholder.png';">
+                                <img src="${imagenSrc}" alt="${detalle.nombre_producto || 'Producto'}" class="order-summary-img me-2" onerror="this.onerror=null;this.src='/static/core/images/placeholder.png';">
                                 <div>
-                                    <small class="fw-semibold d-block text-truncate" style="max-width: 200px;" title="${detalle.nombre_producto || ''}">${detalle.nombre_producto || 'Nombre no disponible'}</small>
+                                    <small class="fw-semibold d-block text-truncate" style="max-width: 200px;" title="${detalle.nombre_producto || ''}">${detalle.nombre_producto || 'N/A'}</small>
                                     <small class="text-muted">Cant: ${detalle.cantidad} x $${(parseFloat(detalle.precio_unitario_venta) || 0).toLocaleString('es-CL')}</small>
                                 </div>
                             </div>
                             <small class="text-muted fw-semibold">$${(parseFloat(detalle.subtotal) || 0).toLocaleString('es-CL')}</small>
-                        </li>
-                    `}).join('') : '<li class="list-group-item px-0 text-muted small">No hay detalles para este pedido.</li>';
+                        </li>`;
+                    }).join('') : '<li class="list-group-item px-0 text-muted small">No hay detalles.</li>';
 
                 const pedidoCardHTML = `
                     <div class="card order-card shadow-sm mb-3">
@@ -214,48 +377,43 @@ document.addEventListener("DOMContentLoaded", function () {
                             <span class="badge bg-${esPedidoEnCurso ? 'info text-dark' : 'success'}">${estadoDescripcion}</span>
                         </div>
                         <div class="card-body">
-                            <ul class="list-group list-group-flush mb-2">
-                                ${detallesHTML}
-                            </ul>
-                            <div class="text-end fw-bold mt-2 fs-5">
-                                Total Pedido: ${totalPedidoFormateado}
-                            </div>
+                            <ul class="list-group list-group-flush mb-2">${detallesHTML}</ul>
+                            <div class="text-end fw-bold mt-2 fs-5">Total: ${totalPedidoFormateado}</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
 
                 if (esPedidoEnCurso) {
-                    if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
+                    if (pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
                     hayPedidosEnCurso = true;
                 } else {
-                    if(historialPedidosContainer) historialPedidosContainer.innerHTML += pedidoCardHTML;
+                    if (historialPedidosContainer) historialPedidosContainer.innerHTML += pedidoCardHTML;
                     hayPedidosEnHistorial = true;
                 }
             });
 
-            if (hayPedidosEnCurso) { if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none'; }
-            else { if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block'; }
+            if (hayPedidosEnCurso) { if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none'; }
+            else { if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block'; }
 
-            if (hayPedidosEnHistorial) { if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none'; }
-            else { if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block'; }
+            if (hayPedidosEnHistorial) { if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none'; }
+            else { if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block'; }
 
         } catch (error) {
-            console.error("Error al procesar los pedidos del cliente:", error);
-            const errorMsg = `<div class="alert alert-warning">No se pudo cargar el historial de pedidos: ${error.message || 'Error desconocido.'}</div>`;
-            if(pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = errorMsg;
-            if(historialPedidosContainer) historialPedidosContainer.innerHTML = errorMsg; 
-            if(noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none';
-            if(noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none';
+            console.error("Error al procesar pedidos:", error);
+            const errorMsg = `<div class="alert alert-warning">Error al cargar pedidos: ${error.message || 'Desconocido.'}</div>`;
+            if (pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = errorMsg;
+            if (historialPedidosContainer) historialPedidosContainer.innerHTML = errorMsg;
+            if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none';
+            if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none';
         }
     }
-    
+
     if (logoutLink) {
-        logoutLink.addEventListener('click', function(event) {
+        logoutLink.addEventListener('click', function (event) {
             event.preventDefault();
             logoutUser();
         });
     }
-    
+
     const registerForm = document.getElementById("registerForm");
     if (registerForm) {
         registerForm.addEventListener("submit", async function (event) {
@@ -276,21 +434,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             try {
-                const response = await fetch(`${API_AUTH_BASE_URL}/register`, { 
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ p_nombre, s_nombre: s_nombre || null, p_apellido, s_apellido: s_apellido || null, correo, telefono: telefono || null, clave }),
+                const response = await fetch(`${API_AUTH_BASE_URL}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ p_nombre, s_nombre: s_nombre || null, p_apellido, s_apellido: s_apellido || null, correo, telefono: telefono || null, clave }),
                 });
                 const data = await response.json();
                 if (response.ok) {
-                apiMessageDiv.innerHTML = '<div class="alert alert-success" role="alert">¡Registro exitoso! Redirigiendo...</div>';
-                setTimeout(() => { window.location.href = "/login/"; }, 2000);
+                    apiMessageDiv.innerHTML = '<div class="alert alert-success" role="alert">¡Registro exitoso! Redirigiendo...</div>';
+                    setTimeout(() => { window.location.href = "/login/"; }, 2000);
                 } else {
-                const errorMessage = data.detail || "Error desconocido al registrar.";
-                apiMessageDiv.innerHTML = `<div class="alert alert-danger" role="alert">${errorMessage}</div>`;
+                    const errorMessage = data.detail || "Error desconocido al registrar.";
+                    apiMessageDiv.innerHTML = `<div class="alert alert-danger" role="alert">${errorMessage}</div>`;
                 }
             } catch (error) {
-                console.error("Error al conectar con API de registro:", error);
+                console.error("Error API registro:", error);
                 apiMessageDiv.innerHTML = '<div class="alert alert-danger" role="alert">No se pudo conectar al servidor.</div>';
             }
         });
@@ -308,16 +466,16 @@ document.addEventListener("DOMContentLoaded", function () {
             formData.append("username", username);
             formData.append("password", password);
             try {
-                const response = await fetch(`${API_AUTH_BASE_URL}/token`, { 
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: formData.toString(),
+                const response = await fetch(`${API_AUTH_BASE_URL}/token`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData.toString(),
                 });
                 const data = await response.json();
                 if (response.ok) {
                     localStorage.setItem("access_token", data.access_token);
                     localStorage.setItem("token_type", data.token_type);
-                    apiMessageDiv.innerHTML = '<div class="alert alert-success" role="alert">¡Inicio de sesión exitoso! Redirigiendo...</div>';
+                    apiMessageDiv.innerHTML = '<div class="alert alert-success" role="alert">¡Éxito! Redirigiendo...</div>';
                     updateAuthUI();
                     const redirectTo = localStorage.getItem("redirect_to_after_login");
                     if (redirectTo) {
@@ -327,25 +485,25 @@ document.addEventListener("DOMContentLoaded", function () {
                         setTimeout(() => { window.location.href = "/"; }, 1000);
                     }
                 } else {
-                    const errorMessage = data.detail || "Error desconocido al iniciar sesión.";
+                    const errorMessage = data.detail || "Error desconocido.";
                     apiMessageDiv.innerHTML = `<div class="alert alert-danger" role="alert">${errorMessage}</div>`;
                 }
             } catch (error) {
-                console.error("Error al conectar con la API de login:", error);
-                apiMessageDiv.innerHTML = '<div class="alert alert-danger" role="alert">No se pudo conectar al servidor de autenticación.</div>';
+                console.error("Error API login:", error);
+                apiMessageDiv.innerHTML = '<div class="alert alert-danger" role="alert">No se pudo conectar.</div>';
             }
         });
     }
 
     function getCart() { return JSON.parse(localStorage.getItem("shoppingCart")) || []; }
-    function saveCart(cart) { 
+    function saveCart(cart) {
         localStorage.setItem("shoppingCart", JSON.stringify(cart));
         updateCartCount();
         renderCartPreview();
         if (window.location.pathname.includes("/carrito/")) renderCartPage();
         if (window.location.pathname.includes("/realizar_compra/")) renderCheckoutSummary();
     }
-    function addToCart(product) { 
+    function addToCart(product) {
         let cart = getCart();
         const existingItem = cart.find(item => String(item.id) === String(product.id));
         if (existingItem) { existingItem.quantity = (parseInt(existingItem.quantity) || 0) + 1; }
@@ -353,12 +511,12 @@ document.addEventListener("DOMContentLoaded", function () {
         saveCart(cart);
         showToast(`"${product.name}" añadido al carrito.`);
     }
-    function removeFromCart(productId) { 
+    function removeFromCart(productId) {
         let cart = getCart();
         cart = cart.filter(item => String(item.id) !== String(productId));
         saveCart(cart);
     }
-    function updateCartItemQuantity(productId, newQuantity) { 
+    function updateCartItemQuantity(productId, newQuantity) {
         let cart = getCart();
         const item = cart.find(item => String(item.id) === String(productId));
         if (item) {
@@ -379,25 +537,25 @@ document.addEventListener("DOMContentLoaded", function () {
         const checkoutBtnCartPage = document.getElementById('checkout-btn');
 
         if (!cartItemsContainer || !cartSubtotalSpan || !cartTotalSpan) return;
-        
+
         const cart = getCart();
         let subtotal = 0;
         cartItemsContainer.innerHTML = "";
 
         if (cart.length === 0) {
             if (cartEmptyMessagePage) cartEmptyMessagePage.style.display = "block";
-            else cartItemsContainer.innerHTML = '<tr><td colspan="6" class="text-center py-4">Tu carrito está vacío.</td></tr>';
+            else cartItemsContainer.innerHTML = '<tr><td colspan="6" class="text-center py-4">Carrito vacío.</td></tr>';
             if (cartSummaryFooter) cartSummaryFooter.style.display = "none";
             if (cartActionsButtons) cartActionsButtons.style.display = "none";
-            cartSubtotalSpan.textContent = "$0.00";
-            cartTotalSpan.textContent = "$0.00";
+            cartSubtotalSpan.textContent = "$0";
+            cartTotalSpan.textContent = "$0";
             if (checkoutBtnCartPage) checkoutBtnCartPage.classList.add("disabled");
             return;
         }
-        
+
         if (cartEmptyMessagePage) cartEmptyMessagePage.style.display = "none";
         if (cartSummaryFooter) cartSummaryFooter.style.display = "table-footer-group";
-        if (cartActionsButtons) cartActionsButtons.style.display = "block"; 
+        if (cartActionsButtons) cartActionsButtons.style.display = "block";
         if (checkoutBtnCartPage) checkoutBtnCartPage.classList.remove("disabled");
 
         cart.forEach((item) => {
@@ -407,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function () {
             subtotal += itemTotal;
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td><img src="${item.image || '/static/core/images/placeholder.png'}" alt="${item.name}" class="img-fluid cart-item-image"></td>
+                <td><img src="${item.image || '/static/core/images/placeholder.png'}" alt="${item.name}" class="img-fluid" style="width: 60px; height: 60px; object-fit: cover;"></td>
                 <td>${item.name}</td>
                 <td class="text-end">$${itemPrice.toLocaleString('es-CL')}</td>
                 <td class="text-center">
@@ -448,7 +606,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!currentCartPreviewItemsListEl || !currentCartPreviewEmptyMessageEl || !currentCartPreviewSubtotalSpanEl || !currentCartPreviewSummaryEl) {
             return;
         }
-        
+
         const cart = getCart();
         let subtotal = 0;
         currentCartPreviewItemsListEl.innerHTML = "";
@@ -456,7 +614,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (cart.length === 0) {
             currentCartPreviewEmptyMessageEl.style.display = "block";
             currentCartPreviewSummaryEl.style.display = "none";
-            currentCartPreviewSubtotalSpanEl.textContent = "$0.00";
+            currentCartPreviewSubtotalSpanEl.textContent = "$0";
             return;
         }
 
@@ -474,7 +632,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             li.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <img src="${item.image || '/static/core/images/placeholder.png'}" alt="${item.name}" class="me-2 rounded cart-preview-item-image">
+                    <img src="${item.image || '/static/core/images/placeholder.png'}" alt="${item.name}" class="me-2 rounded" style="width: 40px; height: 40px; object-fit: cover;">
                     <div class="flex-grow-1">
                         <h6 class="mb-0 small item-name text-truncate" style="max-width: 130px;" title="${item.name}">${item.name}</h6>
                         <div class="d-flex justify-content-between align-items-center">
@@ -515,7 +673,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
-    document.querySelectorAll(".add-to-cart-btn").forEach((button) => { 
+    document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
         button.addEventListener("click", function () {
             const product = {
                 id: this.dataset.productId,
@@ -524,14 +682,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 image: this.dataset.productImage || null,
             };
             if (!product.id || !product.name || isNaN(product.price)) {
-                console.error("Datos del producto incompletos:", this.dataset);
+                console.error("Datos producto incompletos:", this.dataset);
                 showToast("Error: Datos del producto incompletos.", true);
                 return;
             }
             addToCart(product);
         });
     });
-    function showToast(message, isError = false) { 
+    function showToast(message, isError = false) {
         const toastContainer = document.getElementById('toast-container');
         if (toastContainer) {
             const toastId = 'toast-' + Date.now();
@@ -552,10 +710,10 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.show();
             toastLiveExample.addEventListener('hidden.bs.toast', function () { toastLiveExample.remove(); });
         } else {
-             alert(message);
+            alert(message);
         }
     }
-    function handleCheckout() { 
+    function handleCheckout() {
         const cart = getCart();
         if (cart.length === 0) {
             showToast("Tu carrito está vacío.", true);
@@ -564,27 +722,22 @@ document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem('access_token');
         if (!token) {
             showToast("Debes iniciar sesión para proceder al pago.", true);
-            localStorage.setItem('redirect_to_after_login', '/realizar_compra/'); 
+            localStorage.setItem('redirect_to_after_login', '/realizar_compra/');
             window.location.href = '/login/';
             return;
         }
-        window.location.href = '/realizar_compra/'; 
+        window.location.href = '/realizar_compra/';
     }
     const goToCheckoutBtnPreview = document.getElementById('go-to-checkout-btn-preview');
     if (goToCheckoutBtnPreview) {
-        goToCheckoutBtnPreview.addEventListener('click', function(e){ e.preventDefault(); handleCheckout(); });
+        goToCheckoutBtnPreview.addEventListener('click', function (e) { e.preventDefault(); handleCheckout(); });
     }
     const checkoutBtnCartPage = document.getElementById('checkout-btn');
     if (checkoutBtnCartPage) {
-        checkoutBtnCartPage.addEventListener('click', function(e){ e.preventDefault(); handleCheckout(); });
+        checkoutBtnCartPage.addEventListener('click', function (e) { e.preventDefault(); handleCheckout(); });
     }
 
-    if (window.location.pathname.includes('/realizar_compra/')) {
-        renderCheckoutSummary();
-        setupPaymentMethodSelection();
-    }
-
-    function renderCheckoutSummary() { 
+    function renderCheckoutSummary() {
         const summaryList = document.getElementById('checkout-cart-summary');
         const emptyMessage = document.getElementById('checkout-cart-empty');
         const totalsSummary = document.getElementById('checkout-totals-summary');
@@ -595,12 +748,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const checkoutFormSubmitButton = document.getElementById('submit-order-button');
 
         if (!summaryList || !itemCountBadge || !subtotalSpan || !totalSpan || !emptyMessage || !totalsSummary) {
-            console.error("Elementos del resumen de checkout no encontrados en el DOM.");
             return;
         }
 
         const cart = getCart();
-        summaryList.innerHTML = ''; 
+        summaryList.innerHTML = '';
         let currentSubtotal = 0;
         let itemCount = 0;
 
@@ -609,8 +761,10 @@ document.addEventListener("DOMContentLoaded", function () {
             totalsSummary.style.display = 'none';
             itemCountBadge.textContent = '0';
             if (checkoutFormSubmitButton) checkoutFormSubmitButton.classList.add('disabled');
-            showToast("Tu carrito está vacío. Serás redirigido a la página de productos.", true);
-            setTimeout(() => { window.location.href = "/productos/"; }, 3000);
+            if (window.location.pathname.includes("/realizar_compra/")) {
+                showToast("Carrito vacío. Redirigiendo a productos...", true);
+                setTimeout(() => { window.location.href = "/productos/"; }, 3000);
+            }
             return;
         }
 
@@ -639,46 +793,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
         itemCountBadge.textContent = itemCount.toString();
         subtotalSpan.textContent = `$${currentSubtotal.toLocaleString('es-CL')}`;
-        
+
         const shippingCost = 4990;
         if (shippingSpan) shippingSpan.textContent = `$${shippingCost.toLocaleString('es-CL')}`;
         totalSpan.textContent = `$${(currentSubtotal + shippingCost).toLocaleString('es-CL')}`;
     }
-    const togglePasswordButton = document.getElementById('togglePasswordVisibility');
-    const passwordInput = document.getElementById('password');
 
-    if (togglePasswordButton && passwordInput) {
-        const passwordIcon = togglePasswordButton.querySelector('i');
-
-        togglePasswordButton.addEventListener('click', function () {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-
-            if (type === 'password') {
-                passwordIcon.classList.remove('fa-eye-slash');
-                passwordIcon.classList.add('fa-eye');
-            } else {
-                passwordIcon.classList.remove('fa-eye');
-                passwordIcon.classList.add('fa-eye-slash');
-            }
-        });
-    }
-
-     const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');
-
+    const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');
     passwordToggleButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const parentContainer = this.closest('.position-relative');
             if (!parentContainer) return;
 
-            const passwordInput = parentContainer.querySelector('input.form-control-password-toggle');
-            if (!passwordInput) return;
-            
-            const passwordIcon = this.querySelector('i'); 
+            const currentPasswordInput = parentContainer.querySelector('input.form-control-password-toggle');
+            if (!currentPasswordInput) return;
 
-            if (passwordInput && passwordIcon) {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
+            const passwordIcon = this.querySelector('i');
+
+            if (currentPasswordInput && passwordIcon) {
+                const type = currentPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                currentPasswordInput.setAttribute('type', type);
 
                 if (type === 'password') {
                     passwordIcon.classList.remove('fa-eye-slash');
@@ -691,64 +825,71 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    function setupPaymentMethodSelection() { 
-        const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
-        const paymentDetailDivs = document.querySelectorAll('.payment-details');
-        const submitOrderButton = document.getElementById('submit-order-button');
-        const payPalButtonContainer = document.getElementById('paypal-button-container');
-
+    if (paymentMethodRadios.length > 0) {
         paymentMethodRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                paymentDetailDivs.forEach(div => div.classList.remove('active'));
-                
-                const selectedMethod = this.value;
-                const detailDiv = document.getElementById(`payment-details-${selectedMethod}`);
-                if (detailDiv) {
-                    detailDiv.classList.add('active');
+            radio.addEventListener('change', function () {
+                paymentDetailsSections.forEach(detail => {
+                    detail.classList.remove('active');
+                });
+
+                if (paypalButtonDOMContainer &&
+                    document.getElementById('payment-details-paypal') &&
+                    !document.getElementById('payment-details-paypal').classList.contains('active')) {
+                    paypalButtonDOMContainer.innerHTML = '';
                 }
 
-                if (selectedMethod === 'paypal') {
-                    if (submitOrderButton) submitOrderButton.style.display = 'none'; 
-                    if (payPalButtonContainer) payPalButtonContainer.style.display = 'block';
-                } else {
-                    if (submitOrderButton) submitOrderButton.style.display = 'block';
-                    if (payPalButtonContainer) payPalButtonContainer.style.display = 'none';
+                const selectedMethod = this.value;
+                const detailElement = document.getElementById(`payment-details-${selectedMethod}`);
+                if (detailElement) {
+                    detailElement.classList.add('active');
+                    if (selectedMethod === 'paypal') {
+                        initPayPalButton();
+                    }
+                }
+                if (submitOrderButton) {
+                    submitOrderButton.style.display = (selectedMethod === 'paypal') ? 'none' : 'block';
+                    submitOrderButton.disabled = false;
                 }
             });
         });
-        if (paymentMethodRadios.length > 0) {
-            paymentMethodRadios[0].checked = true;
+
+        const initiallySelectedMethodRadio = document.querySelector('input[name="paymentMethod"]:checked');
+        if (initiallySelectedMethodRadio) {
+            initiallySelectedMethodRadio.dispatchEvent(new Event('change'));
+        } else if (paymentMethodRadios.length > 0 && submitOrderButton) {
+            const isPayPalDefault = (paymentMethodRadios[0].value === 'paypal' && paymentMethodRadios[0].checked);
+            submitOrderButton.style.display = isPayPalDefault ? 'none' : 'block';
+            if (!isPayPalDefault) paymentMethodRadios[0].checked = true;
             paymentMethodRadios[0].dispatchEvent(new Event('change'));
         }
     }
-    
-    if (window.location.pathname.includes('/compra_exitosa/')) { 
+
+    if (window.location.pathname.includes('/compra_exitosa/')) {
         localStorage.removeItem('shoppingCart');
         updateCartCount();
         renderCartPreview();
-        console.log("Carrito limpiado después de compra exitosa.");
     }
 
-    if (localStorage.getItem('redirect_to_after_login') && localStorage.getItem('access_token')) { 
-        if (window.location.pathname.toLowerCase().includes('/login/')) { 
+    if (localStorage.getItem('redirect_to_after_login') && localStorage.getItem('access_token')) {
+        if (window.location.pathname.toLowerCase().includes('/login/')) {
             const redirectTo = localStorage.getItem('redirect_to_after_login');
             localStorage.removeItem('redirect_to_after_login');
             window.location.href = redirectTo;
         }
     } else if (localStorage.getItem('redirect_to_after_login') && !localStorage.getItem('access_token')) {
         if (!window.location.pathname.toLowerCase().includes('/login/')) {
-             localStorage.removeItem('redirect_to_after_login');
+            localStorage.removeItem('redirect_to_after_login');
         }
     }
 
-    if (window.location.pathname.includes('/perfil/')) { 
+    if (window.location.pathname.includes('/perfil/')) {
         const token = localStorage.getItem('access_token');
         if (!token) {
             localStorage.setItem('redirect_to_after_login', '/perfil/');
-            window.location.href = '/login/'; 
+            window.location.href = '/login/';
         }
     }
-    
+
     updateAuthUI();
     updateCartCount();
     renderCartPreview();
@@ -757,11 +898,34 @@ document.addEventListener("DOMContentLoaded", function () {
         const clearCartBtn = document.getElementById("clear-cart-btn");
         if (clearCartBtn) {
             clearCartBtn.addEventListener("click", function () {
-                if (confirm("¿Estás seguro de que quieres vaciar todo el carrito?")) {
+                if (confirm("¿Vaciar carrito?")) {
                     localStorage.removeItem("shoppingCart");
-                    renderCartPage(); 
+                    renderCartPage();
                 }
             });
         }
     }
+    if (window.location.pathname.includes("/realizar_compra/")) {
+        renderCheckoutSummary();
+    }
+
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                if (selectedPaymentMethod && selectedPaymentMethod.value === 'paypal') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showCheckoutAlert("Para pagar con PayPal, por favor usa los botones de PayPal.", "info");
+                    return;
+                }
+
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
 });
