@@ -1,21 +1,14 @@
-// main.js
-
-// URL base para la API de Autenticación (registro, login, /users/me)
 const API_AUTH_BASE_URL =
     (typeof API_AUTH_URL_FROM_DJANGO !== "undefined" && API_AUTH_URL_FROM_DJANGO)
         ? API_AUTH_URL_FROM_DJANGO
         : "http://127.0.0.1:8002";
 
-// URL base para la API CRUD (productos, categorías, pedidos del cliente, etc.)
 const API_CRUD_BASE_URL = 
     (typeof API_CRUD_URL_FROM_DJANGO !== 'undefined' && API_CRUD_URL_FROM_DJANGO)
         ? API_CRUD_URL_FROM_DJANGO 
         : "http://127.0.0.1:8001"; 
 
-// Definir MEDIA_URL globalmente si tus imágenes de producto en pedidos la necesitan
-// Asegúrate que esta ruta sea correcta si tu API CRUD sirve los archivos directamente
-// desde una subcarpeta 'media'. Si la API devuelve URLs completas, esto no es necesario.
-const MEDIA_URL = "/media/"; // Ajusta si es diferente, ej. API_CRUD_BASE_URL + "/media/"
+const MEDIA_URL = "/media/";
 
 document.addEventListener("DOMContentLoaded", function () {
     const userGreetingElement = document.getElementById('user-greeting');
@@ -36,7 +29,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (window.location.pathname !== "/" && !window.location.pathname.includes('/login/')) {
              window.location.href = '/';
         } else if (window.location.pathname.includes('/login/')) {
-            // No hacer nada
         } else { 
             window.location.reload();
         }
@@ -153,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             
             console.log("Respuesta de API Pedidos - Status:", response.status);
-            const responseText = await response.text(); // Leer como texto primero para depurar
+            const responseText = await response.text();
             console.log("Respuesta de API Pedidos - Texto:", responseText);
 
 
@@ -163,13 +155,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     const errorData = JSON.parse(responseText);
                     errorDetail = errorData.detail || errorDetail;
                 } catch (e) {
-                    // No hacer nada si no es JSON, usar el texto de respuesta
                     errorDetail = responseText || errorDetail;
                 }
                 throw new Error(`Error ${response.status}: ${errorDetail}`);
             }
 
-            const pedidos = JSON.parse(responseText); // Parsear a JSON ahora que sabemos que es ok
+            const pedidos = JSON.parse(responseText);
             console.log("Pedidos recibidos:", pedidos);
             
             pedidosEnCursoContainer.innerHTML = ''; 
@@ -196,7 +187,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     pedido.detalles.map(detalle => {
                         let imagenSrc = '/static/core/images/placeholder.png'; 
                         if (detalle.imagen_url) {
-                            // Si la URL ya es completa (http...) la usa, sino, la construye.
                             imagenSrc = detalle.imagen_url.startsWith('http') ? detalle.imagen_url : (effectiveCrudUrl.endsWith('/') ? effectiveCrudUrl.slice(0,-1) : effectiveCrudUrl) + MEDIA_URL + detalle.imagen_url;
                         }
                         return `
@@ -259,7 +249,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
     
-    // --- Event Listener para Logout (movido después de la definición de logoutUser) ---
     if (logoutLink) {
         logoutLink.addEventListener('click', function(event) {
             event.preventDefault();
@@ -267,10 +256,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
-    // --- Lógica de Formularios (Registro y Login) ---
     const registerForm = document.getElementById("registerForm");
     if (registerForm) {
-        // ... (tu código de registerForm sin cambios)
         registerForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             const apiMessageDiv = document.getElementById("api-message");
@@ -311,7 +298,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
-        // ... (tu código de loginForm sin cambios, ya usa API_AUTH_BASE_URL)
         loginForm.addEventListener("submit", async function (event) {
             event.preventDefault();
             const apiMessageDiv = document.getElementById("api-message");
@@ -351,7 +337,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // --- Lógica del Carrito de Compras (como la tenías) ---
     function getCart() { return JSON.parse(localStorage.getItem("shoppingCart")) || []; }
     function saveCart(cart) { 
         localStorage.setItem("shoppingCart", JSON.stringify(cart));
@@ -384,7 +369,7 @@ document.addEventListener("DOMContentLoaded", function () {
         saveCart(cart);
     }
 
-    function renderCartPage() { /* ... (tu función renderCartPage) ... */ 
+    function renderCartPage() {
         const cartItemsContainer = document.getElementById("cart-items");
         const cartSubtotalSpan = document.getElementById("cart-subtotal");
         const cartTotalSpan = document.getElementById("cart-total");
@@ -446,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
             input.addEventListener("change", function () { updateCartItemQuantity(this.dataset.productId, this.value); });
         });
     }
-    function updateCartCount() { /* ... (tu función updateCartCount) ... */ 
+    function updateCartCount() {
         if (cartCountBadge) {
             const cart = getCart();
             const totalItems = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
@@ -454,7 +439,7 @@ document.addEventListener("DOMContentLoaded", function () {
             cartCountBadge.style.display = totalItems > 0 ? "inline-block" : "none";
         }
     }
-    function renderCartPreview() { /* ... (tu función renderCartPreview con botones +/-/eliminar) ... */ 
+    function renderCartPreview() {
         const currentCartPreviewItemsListEl = document.getElementById('cart-preview-items-scrollable');
         const currentCartPreviewEmptyMessageEl = document.getElementById('cart-preview-empty');
         const currentCartPreviewSubtotalSpanEl = document.getElementById('cart-preview-subtotal');
@@ -659,6 +644,53 @@ document.addEventListener("DOMContentLoaded", function () {
         if (shippingSpan) shippingSpan.textContent = `$${shippingCost.toLocaleString('es-CL')}`;
         totalSpan.textContent = `$${(currentSubtotal + shippingCost).toLocaleString('es-CL')}`;
     }
+    const togglePasswordButton = document.getElementById('togglePasswordVisibility');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePasswordButton && passwordInput) {
+        const passwordIcon = togglePasswordButton.querySelector('i');
+
+        togglePasswordButton.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            if (type === 'password') {
+                passwordIcon.classList.remove('fa-eye-slash');
+                passwordIcon.classList.add('fa-eye');
+            } else {
+                passwordIcon.classList.remove('fa-eye');
+                passwordIcon.classList.add('fa-eye-slash');
+            }
+        });
+    }
+
+     const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');
+
+    passwordToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const parentContainer = this.closest('.position-relative');
+            if (!parentContainer) return;
+
+            const passwordInput = parentContainer.querySelector('input.form-control-password-toggle');
+            if (!passwordInput) return;
+            
+            const passwordIcon = this.querySelector('i'); 
+
+            if (passwordInput && passwordIcon) {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                if (type === 'password') {
+                    passwordIcon.classList.remove('fa-eye-slash');
+                    passwordIcon.classList.add('fa-eye');
+                } else {
+                    passwordIcon.classList.remove('fa-eye');
+                    passwordIcon.classList.add('fa-eye-slash');
+                }
+            }
+        });
+    });
+
     function setupPaymentMethodSelection() { 
         const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
         const paymentDetailDivs = document.querySelectorAll('.payment-details');

@@ -7,7 +7,6 @@ import logging
 import os
 import time
 
-
 logger = logging.getLogger(__name__)
 
 API_CRUD_BASE_URL = "http://127.0.0.1:8001"
@@ -59,7 +58,7 @@ def productos(request):
 
         for cat_data in api_categorias_raw:
             categories_with_products[cat_data['id_categoria']] = {
-                'id': str(cat_data['id_categoria']), # Asegurarse que el ID sea string si se usa como clave de JS
+                'id': str(cat_data['id_categoria']),
                 'name': cat_data['descripcion'],
                 'products': []
             }
@@ -68,13 +67,13 @@ def productos(request):
             categoria_id = prod_data.get('id_categoria')
             if categoria_id in categories_with_products:
                 categories_with_products[categoria_id]['products'].append({
-                    'id': prod_data.get('id_producto'), # La plantilla espera 'id'
+                    'id': prod_data.get('id_producto'),
                     'name': prod_data.get('nombre', 'Producto sin nombre'),
                     'price': prod_data.get('precio', 0.0),
                     'imagen_url': prod_data.get('imagen_url'),
-                    'marca': prod_data.get('marca'), # Añadido si tu API lo devuelve y la plantilla lo usa
-                    'descripcion_detallada': prod_data.get('descripcion_detallada'), # Añadido si tu API lo devuelve
-                    'id_categoria': prod_data.get('id_categoria') # Útil para la página de detalle
+                    'marca': prod_data.get('marca'),
+                    'descripcion_detallada': prod_data.get('descripcion_detallada'),
+                    'id_categoria': prod_data.get('id_categoria')
                 })
             else:
                 product_name = prod_data.get('nombre', f"ID {prod_data.get('id_producto', 'Desconocido')}")
@@ -83,28 +82,27 @@ def productos(request):
         structured_categories_list = list(categories_with_products.values())
 
     except requests.exceptions.ConnectionError as e:
-        logger.error(f"Error de conexión al intentar alcanzar la API CRUD en {API_CRUD_BASE_URL}: {e}")
-        api_error_message = f"No se pudo conectar a la API de datos. Por favor, verifica que el servicio esté corriendo y sea accesible."
+        logger.error(f"Error de conexión al API CRUD: {e}")
+        api_error_message = "No se pudo conectar al servicio de productos. Inténtalo más tarde."
     except requests.exceptions.HTTPError as e:
-        logger.error(f"Error HTTP de la API CRUD: {e.response.status_code} - {e.response.text}")
-        error_detail = "Error desconocido del servidor API."
+        logger.error(f"Error HTTP del API CRUD: {e.response.status_code} - {e.response.text}")
+        error_detail = "Error al obtener datos de la API."
         try:
             error_detail = e.response.json().get('detail', error_detail)
         except requests.exceptions.JSONDecodeError:
             error_detail = e.response.text if e.response.text else error_detail
-        api_error_message = f"Error al obtener datos de la API ({e.response.status_code}). Detalles: {error_detail}"
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error general de requests al conectar con la API CRUD: {e}")
-        api_error_message = "Ocurrió un error de red al intentar cargar los datos de los productos."
+        api_error_message = f"Error ({e.response.status_code}): {error_detail}"
     except Exception as e:
-        logger.error(f"Error inesperado al procesar datos de la API: {type(e).__name__} - {e}", exc_info=True)
-        api_error_message = "Ocurrió un error inesperado al procesar los datos de los productos."
+        logger.error(f"Error inesperado al procesar datos de productos: {e}", exc_info=True)
+        api_error_message = "Ocurrió un error inesperado al cargar los productos."
 
     context = {
         'page_title': 'Catálogo de Productos',
         'categories_list': structured_categories_list,
         'api_error_message': api_error_message,
-        'api_auth_url_js': API_AUTH_BASE_URL
+        'api_auth_url_js': API_AUTH_BASE_URL,
+        'api_crud_url_js': API_CRUD_BASE_URL,
+        'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'core/productos.html', context)
 
@@ -197,41 +195,3 @@ def compra_exitosa_view(request, numero_orden=None):
         'api_auth_url_js': API_AUTH_BASE_URL
     }
     return render(request, 'core/compra_exitosa.html', context)
-
-def detalle_producto_view(request, id_producto_api):
-    context = {
-        'page_title': 'Detalle del Producto',
-        'api_auth_url_js': API_AUTH_BASE_URL, # Para main.js en base.html o la plantilla completa
-        'product': None,
-        'error_message': None
-    }
-    try:
-        response_producto = requests.get(f"{API_CRUD_BASE_URL}/productosgetid/{id_producto_api}")
-        response_producto.raise_for_status()
-        producto_data = response_producto.json()
-        
-        context['product'] = producto_data
-        context['page_title'] = producto_data.get('nombre', 'Detalle del Producto')
-
-        if producto_data.get('id_categoria'):
-            try:
-                response_categoria = requests.get(f"{API_CRUD_BASE_URL}/categoriasgetid/{producto_data['id_categoria']}")
-                if response_categoria.ok:
-                    context['product']['category_name'] = response_categoria.json().get('descripcion')
-            except Exception as e_cat:
-                logger.warning(f"No se pudo obtener el nombre de la categoría para el producto {id_producto_api}: {e_cat}")
-
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error HTTP al obtener detalle del producto ID {id_producto_api} desde API: {e.response.status_code} - {e.response.text}")
-        if e.response.status_code == 404:
-            context['error_message'] = "Producto no encontrado."
-        else:
-            context['error_message'] = "Error al cargar los detalles del producto. Inténtalo más tarde."
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error de conexión al obtener detalle del producto ID {id_producto_api}: {e}")
-        context['error_message'] = "No se pudo conectar con el servicio de productos. Verifica tu conexión."
-    except Exception as e:
-        logger.error(f"Error inesperado al obtener detalle del producto ID {id_producto_api}: {e}", exc_info=True)
-        context['error_message'] = "Ocurrió un error inesperado al cargar el producto."
-        
-    return render(request, 'core/detalle_producto.html', context)

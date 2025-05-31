@@ -15,5 +15,4 @@ urlpatterns = [
     path('compra_exitosa/', views.compra_exitosa_view, name='compra_exitosa_default'),
     path('compra_exitosa/<str:numero_orden>/', views.compra_exitosa_view, name='compra_exitosa_with_order'),
     path('perfil/', views.perfil_view, name='perfil'),
-    path('producto/<int:id_producto_api>/', views.detalle_producto_view, name='detalle_producto'),
 ]

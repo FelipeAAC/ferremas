@@ -42,7 +42,7 @@
             object-fit: cover;
             border: 4px solid #fff;
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            background-color: #e9ecef; /* Color de fondo para el placeholder */
+            background-color: #e9ecef;
         }
         .profile-avatar-placeholder-icon {
             font-size: 4rem;
@@ -53,7 +53,7 @@
             color: #495057;
             margin-bottom: 0.25rem;
         }
-        .profile-card .form-control[readonly] { /* Para campos que no son editables */
+        .profile-card .form-control[readonly] {
             background-color: #e9ecef;
             opacity: 1;
             cursor: default;
@@ -274,7 +274,7 @@
                     const correoField = document.getElementById('profile-correo');
                     const telefonoField = document.getElementById('profile-telefono');
                     
-                    showToast("Cambios guardados (simulación).", false); // Necesitas la función showToast en main.js
+                    showToast("Cambios guardados (simulación).", false);
 
                     if (correoField) correoField.readOnly = true;
                     if (telefonoField) telefonoField.readOnly = true;

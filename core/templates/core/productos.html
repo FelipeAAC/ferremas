@@ -1,32 +1,34 @@
 {% load static %}
-{% load humanize %} {# Asegúrate que 'django.contrib.humanize' esté en INSTALLED_APPS #}
+{% load humanize %}
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title|default:"Nuestro Catálogo" }} - Ferremas</title>
-    
-    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet"> 
-    
+
+    <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <link rel="stylesheet" href="{% static 'core/css/main.css' %}">
-    
+
     <style>
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding-top: 56px; /* Ajuste para el navbar fijo */
-            background-color: #f8f9fa; 
+            padding-top: 56px;
+            /* Ajuste para el navbar fijo */
+            background-color: #f8f9fa;
         }
-        .main-content { /* Contenedor para el contenido principal de cada página */
+
+        .main-content {
             flex-grow: 1;
-            padding-top: 1.5rem; 
-            padding-bottom: 2rem; 
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
         }
+
         .footer {
             background-color: #343a40;
             color: white;
@@ -34,31 +36,58 @@
             text-align: center;
             flex-shrink: 0;
         }
-        .footer a { color: #adb5bd; }
-        .footer a:hover { color: #ffffff; }
-        .navbar-brand i.fa-tools { color: #ffc107; }
+
+        .footer a {
+            color: #adb5bd;
+        }
+
+        .footer a:hover {
+            color: #ffffff;
+        }
+
+        .navbar-brand i.fa-tools {
+            color: #ffc107;
+        }
 
         /* Estilos para el preview del carrito en el navbar */
         .cart-preview-item-image {
-            width: 50px; height: 50px; object-fit: cover;
-            margin-right: 0.75rem; border-radius: 0.25rem; border: 1px solid #eee;
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 0.75rem;
+            border-radius: 0.25rem;
+            border: 1px solid #eee;
         }
+
         .dropdown-menu-end[aria-labelledby="cartDropdown"] {
-             min-width: 350px !important; 
-             max-height: 450px;
+            min-width: 350px !important;
+            max-height: 450px;
         }
-        #cart-preview-items-scrollable { /* Corregido para coincidir con main.js */
+
+        #cart-preview-items-scrollable {
             max-height: 300px;
             overflow-y: auto;
         }
+
         .cart-preview-item .btn-sm {
-            padding: 0.15rem 0.4rem; font-size: 0.75rem; line-height: 1.2;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.75rem;
+            line-height: 1.2;
         }
+
         .cart-preview-item .item-name {
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden; text-overflow: ellipsis; line-height: 1.2em; max-height: 2.4em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2em;
+            max-height: 2.4em;
         }
-        .alert-container { min-height: 50px; }
+
+        .alert-container {
+            min-height: 50px;
+        }
 
         /* Estilos específicos para la página de productos */
         .page-header-productos {
@@ -68,6 +97,7 @@
             border-radius: 0.3rem;
             text-align: center;
         }
+
         .category-title {
             font-weight: 500;
             border-bottom: 2px solid var(--bs-primary);
@@ -75,62 +105,91 @@
             margin-bottom: 2.5rem;
             font-size: 1.75rem;
         }
+
         .product-card {
             transition: transform .2s ease-out, box-shadow .2s ease-out;
             display: flex;
             flex-direction: column;
             border: 1px solid #e3e3e3;
             border-radius: 0.375rem;
+            background-color: #fff;
+            /* Fondo blanco para las tarjetas */
         }
+
         .product-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.1)!important;
+            box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, .1) !important;
         }
+
         .product-card-img-container {
-            height: 220px;
+            height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            background-color: #fff;
             padding: 0.5rem;
             border-bottom: 1px solid #eee;
         }
+
         .product-card-img {
             max-height: 100%;
             max-width: 100%;
-            object-fit: contain; 
+            object-fit: contain;
         }
+
         .product-card .card-body {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             padding: 1rem;
         }
+
         .product-card .card-title {
-            font-size: 1.05rem;
+            font-size: 1.1rem;
+            /* Un poco más grande */
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            min-height: 2.5em; 
+            margin-bottom: 0.25rem;
+            /* Menos margen inferior */
         }
-        .product-card .card-text.small {
-            font-size: 0.85rem;
+
+        .product-card .product-brand {
+            font-size: 0.8rem;
+            color: #6c757d;
             margin-bottom: 0.75rem;
         }
+
+        .product-card .product-description-inline {
+            /* Nueva clase para la descripción en la tarjeta */
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            /* Para truncar descripción si es muy larga */
+            max-height: 4.5em;
+            /* Aprox 3 líneas (1.5em * 3) */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Para un truncado más robusto con "leer más", se necesitaría JS */
+        }
+
         .product-card .product-price {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            /* Precio un poco más grande */
             font-weight: 700;
             color: var(--bs-success);
             margin-bottom: 1rem;
         }
-        .product-card .btn-group {
+
+        .product-card .add-to-cart-btn {
             margin-top: auto;
-        }
-        .product-card .btn {
-            font-size: 0.875rem;
+            /* Empuja el botón hacia abajo */
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            /* Padding ajustado */
         }
     </style>
 </head>
+
 <body class="d-flex flex-column">
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
@@ -138,52 +197,60 @@
             <a class="navbar-brand" href="{% url 'core:index' %}">
                 <i class="fas fa-tools me-2" aria-hidden="true"></i>Ferremas
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavContent" aria-controls="navbarNavContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavContent"
+                aria-controls="navbarNavContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNavContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'core:index' %}">Inicio</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+                            href="{% url 'core:index' %}">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'productos' %}active{% endif %}" href="{% url 'core:productos' %}">Productos</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'productos' %}active{% endif %}"
+                            href="{% url 'core:productos' %}">Productos</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item me-3">
-                        <span id="user-greeting" class="navbar-text"></span>
-                    </li>
-                    <li class="nav-item" id="profile-link" style="display: none;">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}" href="{% url 'core:perfil' %}"><i class="fas fa-user-circle me-1"></i>Mi Perfil</a>
-                    </li>
-                    <li class="nav-item" id="login-link">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'core:login' %}">Login</a>
-                    </li>
-                    <li class="nav-item" id="register-link">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'registro' %}active{% endif %}" href="{% url 'core:registro' %}">Registro</a>
-                    </li>
-                    <li class="nav-item" id="logout-link" style="display: none;">
-                        <a class="nav-link" href="#">Logout</a>
+                    <li class="nav-item me-3"><span id="user-greeting" class="navbar-text"></span></li>
+                    <li class="nav-item" id="profile-link" style="display: none;"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+                            href="{% url 'core:perfil' %}"><i class="fas fa-user-circle me-1"></i>Mi Perfil</a></li>
+                    <li class="nav-item" id="login-link"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+                            href="{% url 'core:login' %}">Login</a></li>
+                    <li class="nav-item" id="register-link"><a
+                            class="nav-link {% if request.resolver_match.url_name == 'registro' %}active{% endif %}"
+                            href="{% url 'core:registro' %}">Registro</a></li>
+                    <li class="nav-item" id="logout-link" style="display: none;"><a class="nav-link" href="#">Logout</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'carrito' %}active{% endif %}" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'carrito' %}active{% endif %}"
+                            href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-shopping-cart"></i> Carrito
-                            <span class="badge bg-danger rounded-pill" id="cart-count-badge" style="display: none;">0</span>
+                            <span class="badge bg-danger rounded-pill" id="cart-count-badge"
+                                style="display: none;">0</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown" id="cart-preview-container">
-                            <div id="cart-preview-items-scrollable">
-                                </div>
-                            <li id="cart-preview-empty" class="text-center p-2" style="display: block;">Tu carrito está vacío.</li>
-                            <div id="cart-preview-summary" style="display:none;"> 
-                                <li><hr class="dropdown-divider" id="cart-preview-divider"></li>
-                                <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row" id="cart-preview-subtotal-row">
+                        <ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown"
+                            id="cart-preview-container">
+                            <div id="cart-preview-items-scrollable"></div>
+                            <li id="cart-preview-empty" class="text-center p-2" style="display: block;">Tu carrito está
+                                vacío.</li>
+                            <div id="cart-preview-summary" style="display:none;">
+                                <li>
+                                    <hr class="dropdown-divider" id="cart-preview-divider">
+                                </li>
+                                <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row"
+                                    id="cart-preview-subtotal-row">
                                     <strong>Subtotal:</strong>
                                     <span id="cart-preview-subtotal">$0.00</span>
                                 </li>
                                 <li id="cart-preview-buttons">
-                                    <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-2">Ver Carrito Completo</a>
-                                    <a href="#" id="go-to-checkout-btn-preview" class="btn btn-success btn-sm w-100">Ir a Pagar</a>
+                                    <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-2">Ver
+                                        Carrito Completo</a>
+                                    <a href="#" id="go-to-checkout-btn-preview" class="btn btn-success btn-sm w-100">Ir
+                                        a Pagar</a>
                                 </li>
                             </div>
                         </ul>
@@ -201,73 +268,76 @@
             </header>
 
             {% if api_error_message %}
-                <div class="alert alert-danger" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>{{ api_error_message }}
-                </div>
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>{{ api_error_message }}
+            </div>
             {% endif %}
 
             {% if categories_list %}
-                {% for category in categories_list %}
-                <section id="category-{{ category.id|slugify|default:category.name|slugify }}" class="mb-5">
-                    <h2 class="category-title h3">{{ category.name }}</h2>
-                    
-                    {% if category.products %}
-                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-                        {% for product in category.products %}
-                        <div class="col d-flex align-items-stretch">
-                            <div class="card product-card">
-                                <div class="product-card-img-container">
-                                    <img src="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}" 
-                                         class="product-card-img" 
-                                         alt="Imagen de {{ product.name }}"
-                                         onerror="this.onerror=null;this.src='{% static 'core/images/placeholder.png'%}';">
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title" title="{{ product.name }}">{{ product.name|truncatewords:10 }}</h5>
-                                    <p class="card-text small text-muted">{{ product.marca|default:"" }}</p>
-                                    
-                                    {% if product.price is not None %}
-                                        <p class="card-text product-price mb-3">
-                                            ${{ product.price|floatformat:"0"|intcomma }}
-                                        </p>
-                                    {% else %}
-                                        <p class="card-text text-muted mb-3">Precio no disponible</p>
-                                    {% endif %}
+            {% for category in categories_list %}
+            <section id="category-{{ category.id|slugify|default:category.name|slugify }}" class="mb-5">
+                <h2 class="category-title h3">{{ category.name }}</h2>
 
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{% url 'core:detalle_producto' product.id %}" class="btn btn-sm btn-outline-secondary">
-                                            <i class="fas fa-eye me-1"></i>Ver
-                                        </a>
-                                        <button class="btn btn-sm btn-success add-to-cart-btn"
-                                                data-product-id="{{ product.id }}"
-                                                data-product-name="{{ product.name|escapejs }}"
-                                                data-product-price="{{ product.price }}"
-                                                data-product-image="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}">
-                                            <i class="fas fa-cart-plus me-1"></i>Añadir
-                                        </button>
-                                    </div>
-                                </div>
+                {% if category.products %}
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                    {% for product in category.products %}
+                    <div class="col d-flex align-items-stretch">
+                        <div class="card product-card">
+                            <div class="product-card-img-container">
+                                <img src="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}"
+                                    class="product-card-img" alt="Imagen de {{ product.name }}"
+                                    onerror="this.onerror=null;this.src='{% static 'core/images/placeholder.png' %}'">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title" title="{{ product.name }}">{{ product.name|truncatewords:10 }}
+                                </h5>
+                                {% if product.marca %}
+                                <p class="card-text product-brand">{{ product.marca }}</p>
+                                {% endif %}
+
+                                {% if product.descripcion_detallada %}
+                                <p class="card-text product-description-inline"
+                                    title="{{ product.descripcion_detallada }}">
+                                    {{ product.descripcion_detallada|truncatewords:15 }}
+                                </p>
+                                {% endif %}
+
+                                {% if product.price is not None %}
+                                <p class="card-text product-price mb-3">
+                                    ${{ product.price|floatformat:"0"|intcomma }}
+                                </p>
+                                {% else %}
+                                <p class="card-text text-muted mb-3">Precio no disponible</p>
+                                {% endif %}
+
+                                <button class="btn btn-success add-to-cart-btn w-100" data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name|escapejs }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}">
+                                    <i class="fas fa-cart-plus me-2"></i>Añadir al Carrito
+                                </button>
                             </div>
                         </div>
-                        {% endfor %} {# Cierre del bucle de productos #}
                     </div>
-                    {% else %}
-                        <p class="text-muted">No hay productos en esta categoría por el momento.</p>
-                    {% endif %} {# Cierre del if category.products #}
-                </section>
-                {% endfor %} {# Cierre del bucle de categorías #}
-            {% elif not api_error_message %}
-                <div class="alert alert-info text-center" role="alert">
-                    <i class="fas fa-info-circle me-2" aria-hidden="true"></i>No hay categorías de productos para mostrar en este momento.
+                    {% endfor %}
                 </div>
-            {% endif %} {# Cierre del if categories_list / elif not api_error_message #}
+                {% else %}
+                <p class="text-muted">No hay productos en esta categoría por el momento.</p>
+                {% endif %}
+            </section>
+            {% endfor %}
+            {% elif not api_error_message %}
+            <div class="alert alert-info text-center" role="alert">
+                <i class="fas fa-info-circle me-2" aria-hidden="true"></i>No hay categorías de productos para mostrar en
+                este momento.
+            </div>
+            {% endif %}
         </div>
     </main>
-    
-    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-        </div>
 
-    <footer class="footer"> 
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;"></div>
+
+    <footer class="footer">
         <div class="container">
             <p class="mb-1">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
             <p class="mb-0">
@@ -278,12 +348,15 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
     <script>
-        const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}"; 
+        const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}";
+        const API_CRUD_URL_FROM_DJANGO = "{{ api_crud_url_js|default:''|escapejs }}";
+        const MEDIA_URL = "{{ MEDIA_URL|default:'/media/'|escapejs }}"; 
     </script>
-    
     <script src="{% static 'core/js/main.js' %}"></script>
 </body>
+
 </html>

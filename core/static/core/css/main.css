@@ -213,3 +213,29 @@ body {
     border-top: 1px solid #dee2e6;
     padding-top: 0.5rem;
 }
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    z-index: 100;
+    background-color: transparent;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.password-toggle-btn i {
+    color: #6c757d;
+}
+
+.password-toggle-btn:focus,
+.password-toggle-btn:active {
+    box-shadow: none !important;
+}
+
+.form-control-password-toggle {
+    padding-right: 3rem;
+}
