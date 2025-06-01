@@ -6,47 +6,63 @@ import requests
 import logging
 import os
 import time
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import JsonResponse
+from django.urls import reverse
 import json
+from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
 
 logger = logging.getLogger(__name__)
 
-API_CRUD_BASE_URL = "http://127.0.0.1:8001"
-API_AUTH_BASE_URL = "http://127.0.0.1:8002"
+API_CRUD_BASE_URL = getattr(settings, 'API_CRUD_BASE_URL', "http://127.0.0.1:8001")
+API_AUTH_BASE_URL = getattr(settings, 'API_AUTH_BASE_URL', "http://127.0.0.1:8002")
+
+def is_admin_user(user):
+    return user.is_authenticated and user.is_staff
+
+def is_bodeguero_user(user):
+    return user.is_authenticated and user.groups.filter(name='Bodegueros').exists()
+
+def is_empleado_user(user):
+    return user.is_authenticated and user.groups.filter(name='EmpleadosVentas').exists()
 
 def perfil_view(request):
     context = {
         'page_title': 'Mi Perfil',
-        'api_auth_url_js': API_AUTH_BASE_URL,
-        'api_crud_url_js': API_CRUD_BASE_URL
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
+        'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'core/perfil.html', context)
 
 def registro_view(request):
     context = {
         'page_title': 'Registro de Usuario',
-        'api_auth_url_js': API_AUTH_BASE_URL
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL
     }
     return render(request, 'core/registro.html', context)
 
 def login_view(request):
     context = {
         'page_title': 'Iniciar Sesión',
-        'api_auth_url_js': API_AUTH_BASE_URL
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL
     }
     return render(request, 'core/login.html', context)
 
 def index_view(request):
     context = {
         'page_title': 'Bienvenido a Ferremas',
-        'welcome_message': 'Tu ferretería online de confianza.'
+        'welcome_message': 'Tu ferretería online de confianza.',
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
+        'MEDIA_URL': settings.MEDIA_URL,
     }
     return render(request, 'core/index.html', context)
 
 def productos(request):
     structured_categories_list = []
     api_error_message = None
-
     try:
         response_categorias = requests.get(f"{API_CRUD_BASE_URL}/categoriasget")
         response_categorias.raise_for_status()
@@ -57,14 +73,12 @@ def productos(request):
         api_productos_raw = response_productos.json()
         
         categories_with_products = {}
-
         for cat_data in api_categorias_raw:
             categories_with_products[cat_data['id_categoria']] = {
                 'id': str(cat_data['id_categoria']),
                 'name': cat_data['descripcion'],
                 'products': []
             }
-
         for prod_data in api_productos_raw:
             categoria_id = prod_data.get('id_categoria')
             if categoria_id in categories_with_products:
@@ -80,9 +94,7 @@ def productos(request):
             else:
                 product_name = prod_data.get('nombre', f"ID {prod_data.get('id_producto', 'Desconocido')}")
                 logger.warning(f"Producto '{product_name}' con id_categoria {categoria_id} no encontrado en categorías cargadas o id_categoria es nulo.")
-
         structured_categories_list = list(categories_with_products.values())
-
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Error de conexión al API CRUD: {e}")
         api_error_message = "No se pudo conectar al servicio de productos. Inténtalo más tarde."
@@ -102,48 +114,182 @@ def productos(request):
         'page_title': 'Catálogo de Productos',
         'categories_list': structured_categories_list,
         'api_error_message': api_error_message,
-        'api_auth_url_js': API_AUTH_BASE_URL,
-        'api_crud_url_js': API_CRUD_BASE_URL,
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
         'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'core/productos.html', context)
 
+def get_paypal_access_token():
+    auth = (settings.PAYPAL_CLIENT_ID, settings.PAYPAL_CLIENT_SECRET)
+    data = {'grant_type': 'client_credentials'}
+    headers = {'Accept': 'application/json', 'Accept-Language': 'en_US'}
+    try:
+        response = requests.post(
+            f"{settings.PAYPAL_API_BASE_URL}/v1/oauth2/token",
+            auth=auth,
+            data=data,
+            headers=headers,
+            timeout=10 
+        )
+        response.raise_for_status()
+        token_data = response.json()
+        logger.info("Token de acceso de PayPal obtenido exitosamente.")
+        return token_data.get('access_token')
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error al obtener token de PayPal: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            logger.error(f"Respuesta de PayPal (token): {e.response.status_code} - {e.response.text}")
+        return None
+
+def capture_paypal_order(order_id, access_token):
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {access_token}',
+        'PayPal-Request-Id': f'capture-{order_id}-{int(time.time())}' 
+    }
+    capture_url = f"{settings.PAYPAL_API_BASE_URL}/v2/checkout/orders/{order_id}/capture"
+    try:
+        response = requests.post(capture_url, headers=headers, json={}, timeout=20) 
+        response.raise_for_status()
+        logger.info(f"Orden PayPal {order_id} capturada exitosamente. Respuesta: {response.status_code}")
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Error HTTP al capturar orden de PayPal {order_id}: {e.response.status_code} - {e.response.text}")
+        try:
+            return e.response.json()
+        except json.JSONDecodeError:
+            return {'error_description': e.response.text or 'Error HTTP sin cuerpo JSON', 'paypal_status_code': e.response.status_code, 'status': 'ERROR_HTTP'}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error de red/conexión al capturar orden de PayPal {order_id}: {e}")
+        return {'error_description': f'Error de red o conexión con PayPal: {str(e)}', 'status': 'ERROR_CONNECTION'}
+    except Exception as e:
+        logger.error(f"Error inesperado durante la captura de la orden PayPal {order_id}: {e}", exc_info=True)
+        return {'error_description': f'Error inesperado en el servidor: {str(e)}', 'status': 'ERROR_UNEXPECTED'}
+
+@csrf_exempt
+def paypal_capture_order_view(request):
+    if request.method == 'POST':
+        try:
+            paypal_order_id = request.POST.get('orderID')
+            payment_method_name = request.POST.get('payment_method_name')
+            
+            if not paypal_order_id:
+                logger.warning("Intento de captura de PayPal sin orderID en POST.")
+                return JsonResponse({'success': False, 'error': 'No se proporcionó orderID de PayPal.'}, status=400)
+
+            logger.info(f"Recibido orderID de PayPal: {paypal_order_id} para captura desde POST. Método: {payment_method_name}")
+
+            access_token = get_paypal_access_token()
+            if not access_token:
+                logger.error("Fallo crítico: No se pudo obtener token de acceso de PayPal para capturar orden.")
+                return JsonResponse({'success': False, 'error': 'Error de autenticación con PayPal. No se pudo procesar el pago.'}, status=500)
+
+            capture_response = capture_paypal_order(paypal_order_id, access_token)
+            logger.info(f"Respuesta de captura de PayPal para {paypal_order_id}: {json.dumps(capture_response)}")
+
+            if capture_response and capture_response.get('status') == 'COMPLETED':
+                logger.info(f"Pago COMPLETO para orden PayPal {paypal_order_id}.")
+                
+                ferremas_order_id = f"FM-PP-{int(time.time())}" 
+                
+                request.session['last_order_details'] = {
+                    'type': 'paypal',
+                    'paypal_id': capture_response.get('id'),
+                    'status': capture_response.get('status'),
+                    'amount': capture_response.get('purchase_units', [{}])[0].get('payments', {}).get('captures', [{}])[0].get('amount', {}),
+                    'payer_email': capture_response.get('payer', {}).get('email_address'),
+                    'payer_name': f"{capture_response.get('payer', {}).get('name', {}).get('given_name', '')} {capture_response.get('payer', {}).get('name', {}).get('surname', '')}".strip(),
+                    'ferremas_order_id': ferremas_order_id
+                }
+                
+                success_url = reverse('core:compra_exitosa_with_order', kwargs={'numero_orden': ferremas_order_id})
+                return JsonResponse({'success': True, 'message': 'Pago capturado exitosamente.', 'redirect_url': success_url})
+            
+            else:
+                error_message = "Error al procesar el pago con PayPal."
+                paypal_status = capture_response.get('status', 'UNKNOWN_STATUS')
+                if 'error_description' in capture_response:
+                    error_message = capture_response['error_description']
+                elif 'message' in capture_response:
+                    error_message = capture_response['message']
+                elif capture_response.get('details') and isinstance(capture_response['details'], list):
+                     error_message = "; ".join([f"{err.get('issue','')} - {err.get('description','')}" for err in capture_response['details']])
+                
+                logger.error(f"Fallo al capturar orden de PayPal {paypal_order_id} o estado no completado ({paypal_status}). Respuesta: {capture_response}")
+                return JsonResponse({'success': False, 'error': f"PayPal: {error_message} (Estado: {paypal_status})"}, status=400)
+
+        except Exception as e:
+            logger.exception("Excepción inesperada en paypal_capture_order_view.")
+            return JsonResponse({'success': False, 'error': f'Error interno del servidor al procesar pago: {str(e)}'}, status=500)
+            
+    logger.warning(f"Método {request.method} no permitido para paypal_capture_order_view.")
+    return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+def realizar_compra_view(request):
+    context = {
+        'page_title': 'Finalizar Compra',
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
+        'PAYPAL_CLIENT_ID': settings.PAYPAL_CLIENT_ID,
+        'CSRF_TOKEN': get_token(request),
+        'MEDIA_URL': settings.MEDIA_URL,
+        'IS_EMPLOYEE_PAGE': False,
+        'PROCESAR_PAGO_URL': reverse('core:procesar_pago'),
+        'PAYPAL_CAPTURE_URL_DJANGO': reverse('core:paypal_capture_order'),
+        'PRODUCTOS_URL': reverse('core:productos')
+    }
+    return render(request, 'core/realizar_compra.html', context)
+
+def empleado_realizar_compra_view(request):
+    context = {
+        'page_title': 'Registrar Venta (Empleado)',
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
+        'PAYPAL_CLIENT_ID': settings.PAYPAL_CLIENT_ID,
+        'CSRF_TOKEN': get_token(request),
+        'MEDIA_URL': settings.MEDIA_URL,
+        'IS_EMPLOYEE_PAGE': True,
+        'PROCESAR_PAGO_URL': reverse('core:procesar_pago'),
+        'PAYPAL_CAPTURE_URL_DJANGO': reverse('core:paypal_capture_order'),
+        'PRODUCTOS_URL': reverse('core:productos')
+    }
+    return render(request, 'core/empleado_realizar_compra.html', context)
+
+def compra_exitosa_view(request, numero_orden=None):
+    order_details = request.session.pop('last_order_details', {}) 
+    context = {
+        'page_title': '¡Compra Exitosa!',
+        'numero_orden': numero_orden or order_details.get('ferremas_order_id', "Desconocido"),
+        'order_details': order_details,
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL
+    }
+    return render(request, 'core/compra_exitosa.html', context)
+
+@login_required
 def upload_product_image(request, id_producto_api):
     upload_form_template = 'core/upload_image_form.html' 
-
     if request.method == 'POST':
         form = ProductImageUploadForm(request.POST, request.FILES, initial={'id_producto': id_producto_api})
         if form.is_valid():
             imagen_file = form.cleaned_data['imagen']
-            
             upload_subdir = 'productos_imagenes'
             full_upload_dir = os.path.join(settings.MEDIA_ROOT, upload_subdir)
-            
             if not os.path.exists(full_upload_dir):
-                os.makedirs(full_upload_dir)
-
+                os.makedirs(full_upload_dir, exist_ok=True)
             fs = FileSystemStorage(location=full_upload_dir)
-            
             timestamp = int(time.time())
             original_filename = imagen_file.name
             filename_base, file_extension = os.path.splitext(original_filename)
             sane_filename_base = "".join(c if c.isalnum() else "_" for c in filename_base[:30])
             if not file_extension:
-                file_extension = '.jpg' # Default extension if none found
-            
+                file_extension = '.jpg' 
             unique_filename = f"producto_{id_producto_api}_{sane_filename_base}_{timestamp}{file_extension}"
-            
             filename_saved_on_disk = fs.save(unique_filename, imagen_file)
-            
             imagen_path_for_db = os.path.join(upload_subdir, filename_saved_on_disk).replace("\\", "/")
-
             api_update_url = f"{API_CRUD_BASE_URL}/productospatch/{id_producto_api}" 
-            payload = {
-                "imagen_url": imagen_path_for_db
-            }
-            
+            payload = { "imagen_url": imagen_path_for_db }
             logger.info(f"Intentando actualizar imagen para producto ID {id_producto_api} en API: {api_update_url} con payload: {payload}")
-
             try:
                 response = requests.patch(api_update_url, json=payload)
                 response.raise_for_status() 
@@ -151,60 +297,54 @@ def upload_product_image(request, id_producto_api):
                 return redirect('core:productos')
             except requests.exceptions.RequestException as e:
                 logger.error(f"Error al llamar a la API para actualizar imagen del producto ID {id_producto_api}: {e}")
-                if fs.exists(filename_saved_on_disk): # Cleanup uploaded file if API call fails
+                if fs.exists(filename_saved_on_disk): 
                     fs.delete(filename_saved_on_disk)
                 form.add_error(None, f"Error al actualizar la imagen en la API: {e}. El archivo local no se ha conservado.")
-            except Exception as e_general: # Catch any other unexpected errors
-                logger.error(f"Error general al actualizar imagen del producto ID {id_producto_api} en API: {e_general}")
-                if fs.exists(filename_saved_on_disk): # Cleanup
+            except Exception as e_general: 
+                logger.error(f"Error general al actualizar imagen del producto ID {id_producto_api} en API: {e_general}", exc_info=True)
+                if fs.exists(filename_saved_on_disk): 
                     fs.delete(filename_saved_on_disk)
                 form.add_error(None, f"Ocurrió un error inesperado: {e_general}. El archivo local no se ha conservado.")
     else:
         form = ProductImageUploadForm(initial={'id_producto': id_producto_api})
-        
-    return render(request, upload_form_template, {'form': form, 'id_producto': id_producto_api})
+    return render(request, upload_form_template, {'form': form, 'id_producto': id_producto_api, 'page_title': f'Subir Imagen para Producto {id_producto_api}'})
 
+@login_required
 def carrito_view(request):
     context = {
         'page_title': 'Tu Carrito de Compras',
-        'api_auth_url_js': API_AUTH_BASE_URL
+        'API_AUTH_BASE_URL': API_AUTH_BASE_URL,
+        'API_CRUD_BASE_URL': API_CRUD_BASE_URL,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'PRODUCTOS_URL': reverse('core:productos')
     }
     return render(request, 'core/carrito.html', context)
 
-def realizar_compra_view(request):
-    context = {
-        'page_title': 'Finalizar Compra',
-    }
-    # Asume que 'core/realizar_compra.html' es la plantilla genérica.
-    return render(request, 'core/realizar_compra.html', context)
-
+@csrf_exempt 
 def procesar_pago_view(request):
     if request.method == 'POST':
-        nombre = request.POST.get('firstName')
-        direccion = request.POST.get('address')
-        logger.info(f"Procesando pago para: {nombre} en {direccion}")
-        numero_orden_simulado = f"FM-{int(time.time())}"
-        # Redirige a la página de éxito con el número de orden.
-        return redirect('core:compra_exitosa_with_order', numero_orden=numero_orden_simulado)
-    # Si no es POST, redirige de vuelta a la página de compra.
-    return redirect('core:realizar_compra')
+        payment_method = request.POST.get('paymentMethod')
+        
+        logger.info(f"Procesando pago (no PayPal). Método: {payment_method}, Datos POST: {request.POST}")
 
-def compra_exitosa_view(request, numero_orden=None):
-    context = {
-        'page_title': '¡Compra Exitosa!',
-        'numero_orden': numero_orden if numero_orden else "Desconocido",
-        'user': request.session.get('user_info'),
-        'api_auth_url_js': API_AUTH_BASE_URL
-    }
-    return render(request, 'core/compra_exitosa.html', context)
+        ferremas_order_id = f"FM-{payment_method.upper().replace('_','-') if payment_method else 'GEN'}-{int(time.time())}"
+        
+        request.session['last_order_details'] = {
+            'type': payment_method or 'generic',
+            'ferremas_order_id': ferremas_order_id,
+            'customer_name': request.POST.get('firstName', 'Cliente'),
+            'payment_method_used': payment_method
+        }
+        
+        success_url = reverse('core:compra_exitosa_with_order', kwargs={'numero_orden': ferremas_order_id})
+        return JsonResponse({'success': True, 'message': f'Pedido con {payment_method} procesado.', 'redirect_url': success_url})
 
+    logger.warning(f"Intento de acceso a procesar_pago_view con método {request.method} no permitido.")
+    return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+@login_required
+@user_passes_test(is_admin_user)
 def admin_api_crud_view(request):
-    """
-    Prepara y sirve la página de administración del API CRUD.
-    Esta vista compila la metadata de todas las entidades de la API FastAPI
-    para que el frontend (admin.js) pueda generar dinámicamente
-    los formularios y realizar las llamadas a la API.
-    """
     api_entities_list = [
         {
             "name": "Ciudad",
@@ -872,21 +1012,22 @@ def admin_api_crud_view(request):
             }
         },
     ]
-
     context = {
-    'api_entities_json': json.dumps(api_entities_list),
-    'api_entities': api_entities_list,
-    'API_CRUD_BASE_URL_for_js': API_CRUD_BASE_URL
+        'page_title': 'Administración API CRUD',
+        'api_entities_json': json.dumps(api_entities_list),
+        'api_entities': api_entities_list,
+        'API_CRUD_BASE_URL_for_js': API_CRUD_BASE_URL
     }
     return render(request, 'core/admin_api_crud_index.html', context)
 
+@login_required
+@user_passes_test(is_bodeguero_user)
 def bodeguero_pedidos_view(request):
     pedidos_enriquecidos = []
-    todos_los_estados = []
+    todos_los_estados_raw = []
     bodeguero_estados_permitidos = []
     api_error_message = None
-
-    ids_estados_permitidos_bodeguero = [1, 2, 3, 4, 5]
+    ids_estados_permitidos_bodeguero = [1, 2, 3, 4, 5] 
 
     try:
         response_estados = requests.get(f"{API_CRUD_BASE_URL}/estados_pedidoget")
@@ -899,7 +1040,6 @@ def bodeguero_pedidos_view(request):
                 bodeguero_estados_permitidos.append(estado)
         
         bodeguero_estados_permitidos.sort(key=lambda x: x['id_estado_pedido'])
-
 
         response_clientes = requests.get(f"{API_CRUD_BASE_URL}/clientes")
         response_clientes.raise_for_status()
@@ -952,13 +1092,3 @@ def bodeguero_pedidos_view(request):
         'API_CRUD_BASE_URL_for_js': API_CRUD_BASE_URL
     }
     return render(request, 'core/bodeguero_pedidos.html', context)
-
-def empleado_realizar_compra_view(request):
-    context = {
-        'page_title': 'Registrar Venta (Empleado)',
-        'api_crud_url_js': API_CRUD_BASE_URL,
-        'api_auth_url_js': API_AUTH_BASE_URL,
-        'MEDIA_URL': settings.MEDIA_URL,
-        'is_employee_checkout': True
-    }
-    return render(request, 'core/empleado_realizar_compra.html', context)
