@@ -28,6 +28,31 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function ensureUserData() {
+        let userData = null;
+        try {
+            userData = JSON.parse(localStorage.getItem("userData"));
+        } catch { }
+        if (!userData || !userData.id_cliente) {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                const resp = await fetch(`${API_AUTH_BASE_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resp.ok) {
+                    userData = await resp.json();
+                    localStorage.setItem("userData", JSON.stringify(userData));
+                } else {
+                    console.error("No se pudo obtener el perfil del usuario. Status:", resp.status);
+                }
+            } else {
+                console.error("No hay token de acceso en localStorage.");
+            }
+        }
+        console.log("ensureUserData result:", userData);
+        return userData;
+    }
+
     function getOrderAmountDetails() {
         const cart = getCart();
         let subtotalCLP = 0;
@@ -78,11 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('Pago realizado correctamente por ' + details.payer.name.given_name);
 
                     const cart = getCart();
+                    // Usa ensureUserData para obtener el usuario actualizado
+                    const userData = await ensureUserData();
                     let id_cliente = null;
-                    try {
-                        const userData = JSON.parse(localStorage.getItem("userData"));
-                        if (userData && userData.id_cliente) id_cliente = Number(userData.id_cliente);
-                    } catch { }
+                    if (userData && (userData.id_cliente || userData.id)) {
+                        id_cliente = Number(userData.id_cliente || userData.id);
+                    }
 
                     if (!id_cliente || isNaN(id_cliente) || id_cliente <= 0) {
                         showCheckoutAlert("No se pudo identificar al cliente. Por favor, inicia sesión nuevamente.", "danger");
@@ -100,17 +126,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     };
                     console.log("Pedido a enviar:", JSON.stringify(pedidoPayload));
 
-                    await fetch('http://127.0.0.1:8001/pedidopost', {
+                    const response = await fetch('http://127.0.0.1:8001/pedidopost', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(pedidoPayload)
                     });
+                    if (!response.ok) {
+                        throw new Error('Error al registrar el pedido');
+                    }
 
                     localStorage.removeItem('shoppingCart');
                     updateCartCount?.();
                     renderCartPreview?.();
+                    console.log("Redirigiendo a /compra_exitosa/");
                     window.location.href = '/compra_exitosa/';
                 } catch (error) {
+                    console.error('Error al registrar el pedido:', error);
                     alert('Pago realizado, pero hubo un error al registrar el pedido.');
                 }
             },
@@ -396,7 +427,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     localStorage.setItem("access_token", data.access_token);
                     localStorage.setItem("token_type", data.token_type);
 
-                    // NUEVO: Obtener y guardar el perfil del usuario
                     try {
                         const profileResp = await fetch(`${API_AUTH_BASE_URL}/users/me`, {
                             headers: { 'Authorization': `Bearer ${data.access_token}` }
@@ -671,6 +701,34 @@ document.addEventListener('DOMContentLoaded', function () {
         checkoutBtnCartPage.addEventListener('click', function (e) { e.preventDefault(); handleCheckout(); });
     }
 
+    async function mostrarTotalEnDolares() {
+        const totalSpan = document.getElementById('checkout-total');
+        if (!totalSpan) return;
+
+        // Obtén el total en CLP del DOM (ej: "$12.345")
+        const totalCLP = parseInt(totalSpan.textContent.replace(/\D/g, '')) || 0;
+
+        try {
+            const resp = await fetch('https://mindicador.cl/api/dolar');
+            const data = await resp.json();
+            const valorDolar = data.serie[0].valor; // valor actual del dólar
+
+            const totalUSD = (totalCLP / valorDolar).toFixed(2);
+
+            // Si no existe el span para USD, créalo
+            let usdEl = document.getElementById('checkout-total-usd');
+            if (!usdEl) {
+                usdEl = document.createElement('div');
+                usdEl.id = 'checkout-total-usd';
+                usdEl.className = 'text-muted small mt-1';
+                totalSpan.parentNode.appendChild(usdEl);
+            }
+            usdEl.innerHTML = `≈ USD $${totalUSD}`;
+        } catch (e) {
+            // Si falla, no muestra nada
+        }
+    }
+
     function renderCheckoutSummary() {
         const summaryList = document.getElementById('checkout-cart-summary');
         const emptyMessage = document.getElementById('checkout-cart-empty');
@@ -716,12 +774,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const listItem = document.createElement('li');
             listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'lh-sm');
             listItem.innerHTML = `
-                <div>
-                    <h6 class="my-0 text-truncate" style="max-width: 200px;" title="${item.name}">${item.name}</h6>
-                    <small class="text-muted">Cantidad: ${itemQuantity}</small>
-                </div>
-                <span class="text-muted">$${itemTotal.toLocaleString('es-CL')}</span>
-            `;
+            <div>
+                <h6 class="my-0 text-truncate" style="max-width: 200px;" title="${item.name}">${item.name}</h6>
+                <small class="text-muted">Cantidad: ${itemQuantity}</small>
+            </div>
+            <span class="text-muted">$${itemTotal.toLocaleString('es-CL')}</span>
+        `;
             summaryList.appendChild(listItem);
         });
 
@@ -731,6 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const shippingCost = 4990;
         if (shippingSpan) shippingSpan.textContent = `$${shippingCost.toLocaleString('es-CL')}`;
         totalSpan.textContent = `$${(currentSubtotal + shippingCost).toLocaleString('es-CL')}`;
+        mostrarTotalEnDolares();
     }
 
     const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');

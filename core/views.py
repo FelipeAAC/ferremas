@@ -269,16 +269,16 @@ def get_paypal_access_token():
         return None
 
 @login_required
-def capture_paypal_order(order_id, access_token):
+def capture_paypal_order(numero_orden, access_token):
     """
     Captura una orden de PayPal usando el Order ID.
     """
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {access_token}',
-        'PayPal-Request-Id': f'capture-{order_id}-{int(time.time())}' # Para idempotencia
+        'PayPal-Request-Id': f'capture-{numero_orden}-{int(time.time())}' # Para idempotencia
     }
-    capture_url = f"{settings.PAYPAL_API_BASE_URL}/v2/checkout/orders/{order_id}/capture"
+    capture_url = f"{settings.PAYPAL_API_BASE_URL}/v2/checkout/orders/{numero_orden}/capture"
     
     try:
         response = requests.post(capture_url, headers=headers, json={}, timeout=20) # Añadir timeout

@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %} 
+{% extends 'core/base.html' %}
 {% load static %}
 {% load humanize %}
 
@@ -12,23 +12,22 @@
                 <div class="card-body text-center p-5">
                     <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
                     <h1 class="card-title h2 mb-3">{{ page_title|default:"¡Gracias por tu Compra!" }}</h1>
-                    
+
                     <p class="lead">
                         Tu pedido ha sido procesado exitosamente.
                     </p>
                     <p>
-                        Hemos enviado un correo electrónico de confirmación con los detalles de tu compra. 
+                        Hemos enviado un correo electrónico de confirmación con los detalles de tu compra.
                         Si no lo ves en tu bandeja de entrada, por favor revisa tu carpeta de spam o correo no deseado.
                     </p>
-                    
-                    {% if order_id %}
+
+                    {% if numero_orden %}
                     <p class="mt-4">
-                        <strong>Número de Pedido:</strong> {{ order_id }}
+                        <strong>Número de Pedido:</strong> {{ numero_orden }}
                     </p>
                     {% endif %}
-
                     <hr class="my-4">
-                    
+
                     <p>¿Qué te gustaría hacer ahora?</p>
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                         <a href="{% url 'core:productos' %}" class="btn btn-primary btn-lg px-4 gap-3">
