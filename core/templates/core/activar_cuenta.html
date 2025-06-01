@@ -1,0 +1,150 @@
+{% extends "core/base.html" %}
+{% block page_title %}Activar Cuenta{% endblock %}
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="auth-card-container" style="max-width: 480px; width: 100%;">
+        <div class="card shadow-lg">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4 brand-logo-container">
+                    <a href="{% url 'core:index' %}">
+                        <i class="fas fa-tools fa-3x mb-2"></i>
+                        <h1 class="h4 fw-bold brand-name mt-1 mb-0">Ferremas</h1>
+                    </a>
+                </div>
+                <h2 class="card-title text-center fw-light mb-4 fs-4">Activar Cuenta</h2>
+                <div id="activar-cuenta-message" class="alert-container mb-3"></div>
+                <form id="activarCuentaForm" autocomplete="off">
+                    <div id="step1-email">
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="correo" name="correo"
+                                placeholder="tu@email.com" required>
+                            <label for="correo"><i class="fas fa-envelope me-2"></i>Correo Electrónico</label>
+                        </div>
+                        <button type="button" class="btn btn-primary w-100 mb-2" id="buscarCorreoBtn">
+                            <i class="fas fa-search me-2"></i>Buscar correo
+                        </button>
+                    </div>
+                    <div id="step2-rol" style="display:none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Rol asociado:</label>
+                            <div id="rolUsuario" class="alert alert-info py-2 mb-0"></div>
+                        </div>
+                        <button type="button" class="btn btn-success w-100 mb-2" id="mostrarCambioPassBtn">
+                            Cambiar contraseña
+                        </button>
+                    </div>
+                    <div id="step3-password" style="display:none;">
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="nueva_contrasena"
+                                name="nueva_contrasena" placeholder="Nueva contraseña" required minlength="6">
+                            <label for="nueva_contrasena"><i class="fas fa-lock me-2"></i>Nueva contraseña</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="confirmar_contrasena"
+                                name="confirmar_contrasena" placeholder="Confirmar contraseña" required minlength="6">
+                            <label for="confirmar_contrasena"><i class="fas fa-lock me-2"></i>Confirmar contraseña</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-check me-2"></i>Activar y cambiar contraseña
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const API_AUTH_URL = "{{ api_auth_url_js|default:''|escapejs }}";
+const activarCuentaMessage = document.getElementById('activar-cuenta-message');
+const step1 = document.getElementById('step1-email');
+const step2 = document.getElementById('step2-rol');
+const step3 = document.getElementById('step3-password');
+const rolUsuarioDiv = document.getElementById('rolUsuario');
+let correoEncontrado = null;
+let rolEncontrado = null;
+
+document.getElementById('buscarCorreoBtn').addEventListener('click', async function() {
+    activarCuentaMessage.innerHTML = "";
+    const correo = document.getElementById('correo').value.trim();
+    if (!correo) {
+        activarCuentaMessage.innerHTML = '<div class="alert alert-warning">Por favor ingresa tu correo.</div>';
+        return;
+    }
+    try {
+        const resp = await fetch(`${API_AUTH_URL}/users/by-email?correo=${encodeURIComponent(correo)}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        });
+        if (resp.status === 200) {
+            const data = await resp.json();
+            correoEncontrado = correo;
+            rolEncontrado = obtenerRolDesdeAPI(data);
+            rolUsuarioDiv.textContent = rolEncontrado;
+            step1.style.display = "none";
+            step2.style.display = "";
+        } else {
+            activarCuentaMessage.innerHTML = '<div class="alert alert-danger">Correo no encontrado o no registrado.</div>';
+        }
+    } catch (err) {
+        activarCuentaMessage.innerHTML = '<div class="alert alert-danger">Error al buscar el correo. Intenta más tarde.</div>';
+    }
+});
+
+document.getElementById('mostrarCambioPassBtn').addEventListener('click', function() {
+    step2.style.display = "none";
+    step3.style.display = "";
+});
+
+document.getElementById('activarCuentaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    activarCuentaMessage.innerHTML = "";
+    const nueva = document.getElementById('nueva_contrasena').value;
+    const confirmar = document.getElementById('confirmar_contrasena').value;
+    if (nueva.length < 6) {
+        activarCuentaMessage.innerHTML = '<div class="alert alert-warning">La contraseña debe tener al menos 6 caracteres.</div>';
+        return;
+    }
+    if (nueva !== confirmar) {
+        activarCuentaMessage.innerHTML = '<div class="alert alert-warning">Las contraseñas no coinciden.</div>';
+        return;
+    }
+    try {
+        const resp = await fetch(`${API_AUTH_URL}/activar-cuenta`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                correo: correoEncontrado,
+                nueva_contrasena: nueva
+            })
+        });
+        if (resp.status === 200) {
+            activarCuentaMessage.innerHTML = '<div class="alert alert-success">¡Cuenta activada y contraseña cambiada! Redirigiendo...</div>';
+            setTimeout(() => {
+                if (rolEncontrado === "Cliente") {
+                    window.location.href = "{% url 'core:index' %}";
+                } else if (rolEncontrado === "Bodeguero") {
+                    window.location.href = "{% url 'core:bodeguero_pedidos' %}";
+                } else if (rolEncontrado === "Empleado") {
+                    window.location.href = "{% url 'core:empleado_realizar_compra' %}";
+                } else if (rolEncontrado === "Administrador") {
+                    window.location.href = "{% url 'core:admin_api_crud' %}";
+                } else {
+                    window.location.href = "{% url 'core:index' %}";
+                }
+            }, 1800);
+        } else {
+            const data = await resp.json();
+            activarCuentaMessage.innerHTML = `<div class="alert alert-danger">${data.detail || "No se pudo activar la cuenta."}</div>`;
+        }
+    } catch (err) {
+        activarCuentaMessage.innerHTML = '<div class="alert alert-danger">Error al activar la cuenta. Intenta más tarde.</div>';
+    }
+});
+
+function obtenerRolDesdeAPI(data) {
+    if (data.rol) return data.rol;
+    if (data.activo === "N") return "Cliente";
+    return "Cliente";
+}
+</script>
+{% endblock %}

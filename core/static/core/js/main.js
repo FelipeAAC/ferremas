@@ -72,14 +72,47 @@ document.addEventListener('DOMContentLoaded', function () {
                     }]
                 });
             },
-            onApprove: (data, actions) => {
-                return actions.order.capture().then(details => {
+            onApprove: async (data, actions) => {
+                try {
+                    const details = await actions.order.capture();
                     alert('Pago realizado correctamente por ' + details.payer.name.given_name);
+
+                    const cart = getCart();
+                    let id_cliente = null;
+                    try {
+                        const userData = JSON.parse(localStorage.getItem("userData"));
+                        if (userData && userData.id_cliente) id_cliente = Number(userData.id_cliente);
+                    } catch { }
+
+                    if (!id_cliente || isNaN(id_cliente) || id_cliente <= 0) {
+                        showCheckoutAlert("No se pudo identificar al cliente. Por favor, inicia sesión nuevamente.", "danger");
+                        return;
+                    }
+                    const pedidoPayload = {
+                        id_cliente: Number(id_cliente),
+                        total_pedido: Number(cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0), 0)),
+                        detalles: cart.map(item => ({
+                            id_producto: Number(item.id),
+                            cantidad: Number(item.quantity),
+                            precio_unitario_venta: Number(item.price),
+                            subtotal: Number((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0))
+                        }))
+                    };
+                    console.log("Pedido a enviar:", JSON.stringify(pedidoPayload));
+
+                    await fetch('http://127.0.0.1:8001/pedidopost', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(pedidoPayload)
+                    });
+
                     localStorage.removeItem('shoppingCart');
                     updateCartCount?.();
                     renderCartPreview?.();
                     window.location.href = '/compra_exitosa/';
-                });
+                } catch (error) {
+                    alert('Pago realizado, pero hubo un error al registrar el pedido.');
+                }
             },
             onError: (err) => {
                 alert('Error con PayPal: ' + err);
@@ -362,6 +395,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     localStorage.setItem("access_token", data.access_token);
                     localStorage.setItem("token_type", data.token_type);
+
+                    // NUEVO: Obtener y guardar el perfil del usuario
+                    try {
+                        const profileResp = await fetch(`${API_AUTH_BASE_URL}/users/me`, {
+                            headers: { 'Authorization': `Bearer ${data.access_token}` }
+                        });
+                        if (profileResp.ok) {
+                            const userData = await profileResp.json();
+                            localStorage.setItem("userData", JSON.stringify(userData));
+                        }
+                    } catch (e) {
+                        console.warn("No se pudo obtener el perfil del usuario tras login.");
+                    }
+
                     apiMessageDiv.innerHTML = '<div class="alert alert-success" role="alert">¡Éxito! Redirigiendo...</div>';
                     updateAuthUI();
                     const redirectTo = localStorage.getItem("redirect_to_after_login");

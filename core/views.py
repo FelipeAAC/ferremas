@@ -20,6 +20,16 @@ logger = logging.getLogger(__name__)
 API_CRUD_BASE_URL = "http://127.0.0.1:8001"
 API_AUTH_BASE_URL = "http://127.0.0.1:8002"
 
+def is_admin_user(user):
+    return user.is_authenticated and user.is_staff
+
+def is_bodeguero_user(user):
+    return user.is_authenticated and user.groups.filter(name='Bodegueros').exists()
+
+def is_empleado_user(user):
+    return user.is_authenticated and user.groups.filter(name='EmpleadosVentas').exists()
+
+@login_required
 @csrf_exempt
 def paypal_capture_order_view(request):
     if request.method == 'POST':
@@ -115,15 +125,7 @@ def paypal_capture_order_view(request):
     logger.warning(f"Método {request.method} no permitido para paypal_capture_order_view.")
     return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
 
-def is_admin_user(user):
-    return user.is_authenticated and user.is_staff
-
-def is_bodeguero_user(user):
-    return user.is_authenticated and user.groups.filter(name='Bodegueros').exists()
-
-def is_empleado_user(user):
-    return user.is_authenticated and user.groups.filter(name='EmpleadosVentas').exists()
-
+@login_required
 def perfil_view(request):
     context = {
         'page_title': 'Mi Perfil',
@@ -156,6 +158,16 @@ def login_view(request):
         else:
             context['error'] = "Usuario o contraseña incorrectos"
     return render(request, 'core/login.html', context)
+
+def activar_cuenta_view(request):
+    """
+    Vista para mostrar el formulario de activación de cuenta.
+    """
+    context = {
+        'page_title': 'Activar Cuenta',
+        'api_auth_url_js': API_AUTH_BASE_URL
+    }
+    return render(request, 'core/activar_cuenta.html', context)
 
 def index_view(request):
     context = {
@@ -231,6 +243,7 @@ def productos(request):
     }
     return render(request, 'core/productos.html', context)
 
+@login_required
 def get_paypal_access_token():
     """
     Obtiene un token de acceso de PayPal.
@@ -257,6 +270,7 @@ def get_paypal_access_token():
             logger.error(f"Respuesta de PayPal (token): {e.response.status_code} - {e.response.text}")
         return None
 
+@login_required
 def capture_paypal_order(order_id, access_token):
     """
     Captura una orden de PayPal usando el Order ID.
@@ -283,72 +297,7 @@ def capture_paypal_order(order_id, access_token):
                 return {'error_description': e.response.text, 'paypal_status_code': e.response.status_code} # Nombre de error más genérico
         return {'error_description': str(e)} # Nombre de error más genérico
 
-@csrf_exempt # Para producción, envía el token CSRF desde JS en las cabeceras.
-def paypal_capture_order_view(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            paypal_order_id = data.get('orderID')
-            
-            if not paypal_order_id:
-                logger.warning("Intento de captura de PayPal sin orderID.")
-                return JsonResponse({'success': False, 'error': 'No se proporcionó orderID de PayPal.'}, status=400)
-
-            logger.info(f"Recibido orderID de PayPal: {paypal_order_id} para captura.")
-
-            access_token = get_paypal_access_token()
-            if not access_token:
-                logger.error("Fallo crítico: No se pudo obtener token de acceso de PayPal para capturar orden.")
-                return JsonResponse({'success': False, 'error': 'Error de autenticación con PayPal. No se pudo procesar el pago.'}, status=500)
-
-            capture_response = capture_paypal_order(paypal_order_id, access_token)
-            
-            logger.info(f"Respuesta de captura de PayPal para {paypal_order_id}: {json.dumps(capture_response)}")
-
-            if capture_response and capture_response.get('status') == 'COMPLETED':
-                logger.info(f"Pago COMPLETO para orden PayPal {paypal_order_id}.")
-                
-                ferremas_order_id = f"FM-PP-{int(time.time())}" # Simulación
-                
-                # Guardar información relevante en la sesión para la página de éxito
-                # Esta información es para mostrar al usuario, no para la lógica de negocio crítica.
-                request.session['paypal_order_details'] = {
-                    'paypal_id': capture_response.get('id'),
-                    'status': capture_response.get('status'),
-                    'amount': capture_response.get('purchase_units', [{}])[0].get('payments', {}).get('captures', [{}])[0].get('amount', {}),
-                    'payer_email': capture_response.get('payer', {}).get('email_address'),
-                    'payer_name': f"{capture_response.get('payer', {}).get('name', {}).get('given_name', '')} {capture_response.get('payer', {}).get('name', {}).get('surname', '')}".strip(),
-                    'ferremas_order_id': ferremas_order_id
-                }
-                
-                success_url = reverse('core:compra_exitosa_with_order', kwargs={'numero_orden': ferremas_order_id})
-                return JsonResponse({'success': True, 'message': 'Pago capturado exitosamente.', 'redirect_url': success_url})
-            
-            else:
-                error_message = "Error al procesar el pago con PayPal."
-                if capture_response:
-                    if 'error_description' in capture_response: # Usar el campo que definimos
-                        error_message = capture_response['error_description']
-                    elif 'message' in capture_response: # Algunos errores de PayPal vienen en 'message'
-                        error_message = capture_response['message']
-                    elif 'details' in capture_response and isinstance(capture_response['details'], list):
-                         error_message = "; ".join([f"{err.get('issue','')} - {err.get('description','')}" for err in capture_response['details']])
-
-
-                logger.error(f"Fallo al capturar orden de PayPal {paypal_order_id} o estado no completado. Respuesta: {capture_response}")
-                return JsonResponse({'success': False, 'error': f"PayPal: {error_message}"}, status=400)
-
-        except json.JSONDecodeError:
-            logger.error("Error al decodificar JSON de la petición POST para paypal_capture_order_view.")
-            return JsonResponse({'success': False, 'error': 'Petición malformada.'}, status=400)
-        except Exception as e:
-            logger.exception("Excepción inesperada en paypal_capture_order_view.")
-            return JsonResponse({'success': False, 'error': f'Error interno del servidor al procesar pago.'}, status=500)
-            
-    logger.warning(f"Método {request.method} no permitido para paypal_capture_order_view.")
-    return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
-
-# --- Vistas de Páginas ---
+@login_required
 def realizar_compra_view(request):
     context = {
         'page_title': 'Finalizar Compra',
@@ -359,6 +308,7 @@ def realizar_compra_view(request):
     }
     return render(request, 'core/realizar_compra.html', context)
 
+@user_passes_test(is_empleado_user)
 def empleado_realizar_compra_view(request):
     context = {
         'page_title': 'Registrar Venta (Empleado)',
@@ -371,6 +321,7 @@ def empleado_realizar_compra_view(request):
     }
     return render(request, 'core/empleado_realizar_compra.html', context)
 
+@login_required
 def compra_exitosa_view(request, numero_orden=None):
     order_details_from_session = request.session.pop('paypal_order_details', None)
     if not order_details_from_session:
@@ -513,7 +464,7 @@ def compra_exitosa_view(request, numero_orden=None):
     }
     return render(request, 'core/compra_exitosa.html', context)
 
-@login_required
+@user_passes_test(is_admin_user)
 def admin_api_crud_view(request):
     api_entities_list = [
         {
@@ -1190,7 +1141,7 @@ def admin_api_crud_view(request):
     }
     return render(request, 'core/admin_api_crud_index.html', context)
 
-@login_required
+@user_passes_test(is_bodeguero_user)
 def bodeguero_pedidos_view(request):
     pedidos_enriquecidos = []
     todos_los_estados_raw = []
@@ -1262,13 +1213,3 @@ def bodeguero_pedidos_view(request):
     }
     return render(request, 'core/bodeguero_pedidos.html', context)
 
-@login_required
-def empleado_realizar_compra_view(request):
-    context = {
-        'page_title': 'Registrar Venta (Empleado)',
-        'api_crud_url_js': API_CRUD_BASE_URL,
-        'api_auth_url_js': API_AUTH_BASE_URL,
-        'MEDIA_URL': settings.MEDIA_URL,
-        'is_employee_checkout': True
-    }
-    return render(request, 'core/empleado_realizar_compra.html', context)

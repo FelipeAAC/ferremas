@@ -18,4 +18,5 @@ urlpatterns = [
     path('admin-api-crud/', views.admin_api_crud_view, name='admin_api_crud'),
     path('bodega/', views.bodeguero_pedidos_view, name='bodeguero_pedidos'),
     path('registrar-venta/', views.empleado_realizar_compra_view, name='empleado_realizar_compra'),
+    path('activar-cuenta/', views.activar_cuenta_view, name='activar_cuenta'),
 ]
