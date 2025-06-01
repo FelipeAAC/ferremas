@@ -89,7 +89,6 @@ def paypal_capture_order_view(request):
                     logger.error(f"Error al crear pedido en FastAPI: {e}")
                     return JsonResponse({'success': False, 'error': 'Pago capturado, pero error al registrar el pedido. Contacta soporte.'}, status=500)
 
-                # Guardar información relevante en la sesión para la página de éxito
                 request.session['paypal_order_details'] = {
                     'paypal_id': capture_response.get('id'),
                     'status': capture_response.get('status'),
@@ -125,6 +124,7 @@ def paypal_capture_order_view(request):
     logger.warning(f"Método {request.method} no permitido para paypal_capture_order_view.")
     return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
 
+
 @login_required
 def perfil_view(request):
     context = {
@@ -158,7 +158,6 @@ def login_view(request):
         else:
             context['error'] = "Usuario o contraseña incorrectos"
     return render(request, 'core/login.html', context)
-
 def activar_cuenta_view(request):
     """
     Vista para mostrar el formulario de activación de cuenta.
@@ -168,7 +167,6 @@ def activar_cuenta_view(request):
         'api_auth_url_js': API_AUTH_BASE_URL
     }
     return render(request, 'core/activar_cuenta.html', context)
-
 def index_view(request):
     context = {
         'page_title': 'Bienvenido a Ferremas',

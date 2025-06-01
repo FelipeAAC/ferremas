@@ -17,20 +17,20 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding-top: 56px; /* Ajuste para el navbar fijo */
+            padding-top: 56px;
             background-color: #f8f9fa; 
         }
         .main-content {
-            flex-grow: 1; /* Permite que el contenido principal crezca */
-            padding-top: 1.5rem; /* Espacio adicional después del navbar */
-            padding-bottom: 1.5rem; /* Espacio antes del footer */
+            flex-grow: 1;
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
         }
         .footer {
-            background-color: #343a40; /* Color oscuro para el footer */
+            background-color: #343a40;
             color: white;
             padding: 2rem 0;
             text-align: center;
-            flex-shrink: 0; /* Evita que el footer se encoja */
+            flex-shrink: 0;
         }
         .footer a {
             color: #adb5bd; 
@@ -38,7 +38,7 @@
         .footer a:hover {
             color: #ffffff;
         }
-        .navbar-brand i.fa-tools { /* Color específico para el icono de herramientas */
+        .navbar-brand i.fa-tools {
             color: #ffc107; 
         }
         .cart-preview-item-image {
@@ -49,18 +49,17 @@
             border-radius: 0.25rem;
             border: 1px solid #eee;
         }
-        .dropdown-menu-end[aria-labelledby="cartDropdown"] { /* Estilos para el dropdown del carrito */
+        .dropdown-menu-end[aria-labelledby="cartDropdown"] {
              min-width: 350px !important; 
-             max-height: 450px; /* Permite más ítems antes de scroll */
+             max-height: 450px;
         }
-        #cart-preview-items-scrollable { /* Para el scroll dentro del dropdown */
-            max-height: 300px; /* Altura máxima para la lista de ítems antes de scroll */
+        #cart-preview-items-scrollable {
+            max-height: 300px;
             overflow-y: auto;
         }
-        .alert-container { /* Contenedor para mensajes de la API */
+        .alert-container {
             min-height: 50px; 
         }
-         /* Estilos para los botones de +/- en el preview del carrito */
         .cart-preview-item .btn-sm {
             padding: 0.15rem 0.4rem;
             font-size: 0.75rem;
@@ -73,7 +72,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             line-height: 1.2em;
-            max-height: 2.4em; /* 2 líneas * 1.2em */
+            max-height: 2.4em;
         }
     </style>
     {% block extra_head %}{% endblock extra_head %}

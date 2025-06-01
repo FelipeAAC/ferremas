@@ -17,16 +17,16 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding-top: 70px; /* Ajuste para el navbar fijo */
+            padding-top: 70px;
             background-color: #f8f9fa; 
         }
-        .main-content-area { /* Nuevo contenedor para el contenido principal */
+        .main-content-area {
             flex-grow: 1;
-            padding-top: 1rem; /* Espacio desde el navbar */
-            padding-bottom: 2rem; /* Espacio antes del footer */
+            padding-top: 1rem;
+            padding-bottom: 2rem;
         }
         .navbar-brand i {
-            color: #ffc107; /* Color amarillo para el icono de herramientas */
+            color: #ffc107;
         }
         .cart-item-image {
             width: 60px;
@@ -48,7 +48,7 @@
             color: white;
             padding: 2rem 0;
             text-align: center;
-            flex-shrink: 0; /* Evita que el footer se encoja */
+            flex-shrink: 0;
         }
         .footer a {
             color: #adb5bd;
@@ -56,18 +56,17 @@
         .footer a:hover {
             color: #ffffff;
         }
-        .cart-preview-item-image { /* Estilo para las imágenes en el preview del carrito */
-            width: 50px;
+        .cart-preview-item-image {
             height: 50px;
             object-fit: cover;
             margin-right: 0.5rem;
             border-radius: 0.25rem;
         }
-        .dropdown-menu-end { /* Asegura que el dropdown del carrito no sea demasiado estrecho */
-             min-width: 350px !important; /* Aumentado un poco */
-             max-height: 450px; /* Para permitir más items */
+        .dropdown-menu-end {
+             min-width: 350px !important;
+             max-height: 450px;
         }
-        #cart-preview-items-scrollable { /* Para el scroll dentro del dropdown */
+        #cart-preview-items-scrollable {
             max-height: 300px;
             overflow-y: auto;
         }

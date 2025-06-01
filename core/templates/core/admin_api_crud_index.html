@@ -1,7 +1,7 @@
 {% extends 'core/basedos.html' %}
 {% load static %}
 
-{% block title %}Admin API CRUD Panel{% endblock %}
+{% block title %}Panel de Administración API CRUD{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -87,7 +87,7 @@
                         </button>
                     </div>
 
-                    <h6 class="mt-4">Resultados para {{entity.name}}:</h6>
+                    <h6 class="mt-4">Resultados para {{ entity.name }}:</h6>
                     <div class="results-container" id="results-{{ entity.name|slugify }}">
                         <small class="text-muted">Los resultados de las operaciones GET All o mensajes de otras operaciones se mostrarán aquí.</small>
                     </div>
@@ -103,7 +103,7 @@
     <div class="modal-content">
       <div class="modal-header bg-light">
         <h5 class="modal-title" id="crudModalLabel">Detalle / Formulario</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body" id="crudModalBody">
         <div class="text-center">
@@ -123,7 +123,6 @@
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -136,4 +135,4 @@
     let currentItemId = null;
 </script>
 <script src="{% static 'core/js/admin.js' %}"></script>
-{% endblock extra_js %}
+{% endblock %}

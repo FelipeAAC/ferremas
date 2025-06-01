@@ -10,7 +10,7 @@
         vertical-align: middle;
     }
     .status-select {
-        min-width: 220px; /* Ajusta según sea necesario para los nombres largos */
+        min-width: 220px;
     }
     .action-cell {
         min-width: 120px;
@@ -22,7 +22,7 @@
         z-index: 1090;
     }
     .badge {
-        font-size: 0.85em; /* Un poco más grande para mejor lectura */
+        font-size: 0.85em;
     }
 </style>
 {% endblock %}
@@ -56,7 +56,7 @@
                             <th>Sucursal Origen</th>
                             <th class="text-end">Total</th>
                             <th>Estado Actual</th>
-                            <th>Cambiar Estado a (Bodeguero)</th>
+                            <th>Cambiar Estado</th>
                             <th class="text-center">Acción</th>
                         </tr>
                     </thead>
@@ -64,24 +64,36 @@
                         {% for pedido in pedidos %}
                         <tr id="pedido-row-{{ pedido.id_pedido }}">
                             <td><strong>#{{ pedido.id_pedido }}</strong></td>
-                            <td>{{ pedido.fecha_pedido|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if pedido.fecha_pedido %}
+                                    {{ pedido.fecha_pedido|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Sin fecha</span>
+                                {% endif %}
+                            </td>
                             <td>{{ pedido.cliente_nombre|default:"N/A" }}</td>
                             <td>{{ pedido.empleado_nombre|default:"N/A" }}</td>
                             <td>{{ pedido.sucursal_nombre|default:"N/A" }}</td>
                             <td class="text-end">${{ pedido.total_pedido|floatformat:0|intcomma }}</td>
-                            <td id="estado-actual-{{ pedido.id_pedido }}"><span class="badge bg-info text-dark">{{ pedido.estado_descripcion }}</span></td>
+                            <td id="estado-actual-{{ pedido.id_pedido }}">
+                                <span class="badge bg-info text-dark">{{ pedido.estado_descripcion }}</span>
+                            </td>
                             <td>
-                                <select class="form-select form-select-sm status-select" id="select-estado-{{ pedido.id_pedido }}" data-pedido-id="{{ pedido.id_pedido }}" data-current-status-id="{{ pedido.id_estado_pedido }}">
-                                    {# Poblar con los estados permitidos para el bodeguero #}
+                                <select class="form-select form-select-sm status-select"
+                                        id="select-estado-{{ pedido.id_pedido }}"
+                                        data-pedido-id="{{ pedido.id_pedido }}"
+                                        data-current-status-id="{{ pedido.id_estado_pedido }}">
                                     {% for estado in bodeguero_estados_permitidos %}
-                                        <option value="{{ estado.id_estado_pedido }}" {% if estado.id_estado_pedido == pedido.id_estado_pedido %}selected{% endif %}>
+                                        <option value="{{ estado.id_estado_pedido }}"
+                                            {% if estado.id_estado_pedido == pedido.id_estado_pedido %}selected{% endif %}>
                                             {{ estado.id_estado_pedido }} - {{ estado.descripcion }}
                                         </option>
                                     {% endfor %}
                                 </select>
                             </td>
                             <td class="text-center action-cell">
-                                <button class="btn btn-success btn-sm btn-guardar-estado" data-pedido-id="{{ pedido.id_pedido }}">
+                                <button class="btn btn-success btn-sm btn-guardar-estado"
+                                        data-pedido-id="{{ pedido.id_pedido }}">
                                     <i class="fas fa-save me-1"></i> Guardar
                                 </button>
                             </td>
@@ -91,11 +103,6 @@
                 </table>
             </div>
         </div>
-         {% if not pedidos and not api_error_message %}
-            <div class="card-body text-center">
-                <p class="text-muted">No hay pedidos para mostrar.</p>
-            </div>
-        {% endif %}
     </div>
     {% elif not api_error_message %}
         <div class="alert alert-info text-center" role="alert">
@@ -104,12 +111,10 @@
     {% endif %}
 </div>
 
-<div class="toast-container">
-</div>
-
+<div class="toast-container"></div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <script>
     const API_BASE_URL = "{{ API_CRUD_BASE_URL_for_js }}";
     const todosLosEstadosParaMapa = {{ todos_los_estados|safe }};
@@ -119,7 +124,6 @@
             mapaEstadosGlobal[estado.id_estado_pedido] = estado.descripcion;
         });
     }
-
 
     document.querySelectorAll('.btn-guardar-estado').forEach(button => {
         button.addEventListener('click', async function() {
@@ -138,7 +142,7 @@
 
             const url = `${API_BASE_URL}/pedidopatch/${pedidoId}`;
             const payload = {
-                id_estado_pedido: nuevoEstadoId // Asegúrate que el nombre del campo coincida con el esperado por tu API PATCH
+                id_estado_pedido: nuevoEstadoId
             };
 
             try {
@@ -155,18 +159,18 @@
                 if (!response.ok) {
                     throw new Error(responseData.detail || responseData.Mensaje || `Error ${response.status} de la API.`);
                 }
-                
+
                 showToast(responseData.Mensaje || "Estado del pedido actualizado con éxito.", "success");
 
                 const estadoActualCell = document.getElementById(`estado-actual-${pedidoId}`);
                 if (estadoActualCell) {
                     const nuevoEstadoDesc = mapaEstadosGlobal[nuevoEstadoId] || "Desconocido";
-                    let badgeClass = 'bg-info text-dark'; // Default
-                    if (nuevoEstadoId == 2) badgeClass = 'bg-warning text-dark'; // En Preparación
-                    else if (nuevoEstadoId == 3) badgeClass = 'bg-primary text-white'; // Listo para Despacho
-                    else if (nuevoEstadoId == 4) badgeClass = 'bg-secondary text-white'; // Despachado
-                    else if (nuevoEstadoId == 5) badgeClass = 'bg-success text-white'; // Entregado
-                    
+                    let badgeClass = 'bg-info text-dark';
+                    if (nuevoEstadoId == 2) badgeClass = 'bg-warning text-dark';
+                    else if (nuevoEstadoId == 3) badgeClass = 'bg-primary text-white';
+                    else if (nuevoEstadoId == 4) badgeClass = 'bg-secondary text-white';
+                    else if (nuevoEstadoId == 5) badgeClass = 'bg-success text-white';
+
                     estadoActualCell.innerHTML = `<span class="badge ${badgeClass}">${escapeHtmlJS(nuevoEstadoDesc)}</span>`;
                 }
                 selectElement.dataset.currentStatusId = nuevoEstadoId;
