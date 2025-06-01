@@ -12,7 +12,7 @@
     <link href="{% static 'core/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'core/css/main.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-        xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
@@ -56,13 +56,11 @@
             border-radius: .375rem;
             margin-bottom: 0.5rem;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
         }
 
         .payment-method-option:hover,
         .payment-method-option.active {
             background-color: #e9ecef;
-            border-color: #0d6efd;
         }
 
         .payment-details {
@@ -70,7 +68,6 @@
             margin-top: 1rem;
             padding: 1rem;
             background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
             border-radius: .375rem;
         }
 
@@ -78,16 +75,10 @@
             display: block;
         }
 
-        #paypal-button-container {
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
-            align-items: center;
-        }
+        #paypal-button-container .paypal-buttons {}
 
         .alert-container {
             min-height: 50px;
-            margin-bottom: 1rem;
         }
 
         .order-summary-img {
@@ -96,23 +87,9 @@
             object-fit: cover;
             border-radius: .25rem;
         }
-
-        .spinner-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            flex-direction: column;
-        }
-
-        .spinner-container .fa-spinner {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
     </style>
-
     <script
-        src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD&disable-funding=credit,card"></script>
+        src="https://www.paypal.com/sdk/js?client-id=AYOlbCxD6Gd60gXLsP5SkArDzzM5ZUAeComtgqaKVqj5_MVhv6TeYL2dChy-g8TqxTDsL3wumWLMcnTg&currency=USD&intent=capture"></script>
 </head>
 
 <body class="d-flex flex-column">
@@ -158,19 +135,18 @@
                                 style="display: none;">0</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end p-3 shadow" aria-labelledby="cartDropdown"
-                            id="cart-preview-container" style="min-width: 320px;">
-                            <div id="cart-preview-items-scrollable" style="max-height: 300px; overflow-y: auto;">
-                            </div>
+                            id="cart-preview-container">
+                            <div id="cart-preview-items-scrollable"></div>
                             <li id="cart-preview-empty" class="text-center p-2" style="display: block;">Tu carrito está
                                 vacío.</li>
                             <div id="cart-preview-summary" style="display:none;">
                                 <li>
-                                    <hr class="dropdown-divider my-2" id="cart-preview-divider">
+                                    <hr class="dropdown-divider" id="cart-preview-divider">
                                 </li>
                                 <li class="d-flex justify-content-between align-items-center mb-2 cart-preview-total-row"
                                     id="cart-preview-subtotal-row">
                                     <strong>Subtotal:</strong>
-                                    <span id="cart-preview-subtotal">$0</span>
+                                    <span id="cart-preview-subtotal">$0.00</span>
                                 </li>
                                 <li id="cart-preview-buttons">
                                     <a href="{% url 'core:carrito' %}" class="btn btn-primary btn-sm w-100 mb-2">Ver
@@ -187,12 +163,11 @@
     </nav>
     <main class="main-content">
         <div class="container">
-            <header class="text-center mb-4">
+            <header class="text-center mb-5">
                 <h1 class="display-5 fw-bold">{{ page_title|default:"Finalizar Compra" }}</h1>
             </header>
 
-            <div id="checkout-alert-container" class="alert-container">
-            </div>
+            <div id="checkout-alert-container" class="alert-container mb-3"></div>
 
             <div class="row g-5">
                 <div class="col-md-5 col-lg-4 order-md-last">
@@ -201,7 +176,7 @@
                         <span class="badge bg-primary rounded-pill" id="checkout-item-count">0</span>
                     </h4>
                     <ul class="list-group mb-3" id="checkout-cart-summary">
-                        <li id="checkout-cart-empty" class="list-group-item text-center text-muted py-3">Tu carrito está
+                        <li id="checkout-cart-empty" class="list-group-item text-center text-muted">Tu carrito está
                             vacío.</li>
                     </ul>
                     <ul class="list-group mb-3" id="checkout-totals-summary" style="display: none;">
@@ -218,7 +193,7 @@
                             <strong id="checkout-total">$4.990</strong>
                         </li>
                     </ul>
-                    <form class="card p-2 mb-3">
+                    <form class="card p-2">
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="Código de descuento">
                             <button type="button" class="btn btn-secondary">Aplicar</button>
@@ -234,22 +209,22 @@
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <label for="firstName" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="firstName" name="firstName"
-                                    placeholder="Juan" value="" required>
+                                <input type="text" class="form-control" id="firstName" name="firstName" placeholder=""
+                                    value="" required>
                                 <div class="invalid-feedback">Se requiere un nombre válido.</div>
                             </div>
                             <div class="col-sm-6">
                                 <label for="lastName" class="form-label">Apellidos</label>
-                                <input type="text" class="form-control" id="lastName" name="lastName"
-                                    placeholder="Pérez" value="" required>
+                                <input type="text" class="form-control" id="lastName" name="lastName" placeholder=""
+                                    value="" required>
                                 <div class="invalid-feedback">Se requieren apellidos válidos.</div>
                             </div>
                             <div class="col-12">
-                                <label for="email" class="form-label">Correo Electrónico</label>
+                                <label for="email" class="form-label">Correo Electrónico <span
+                                        class="text-muted">(Opcional para la cuenta, requerido para
+                                        confirmación)</span></label>
                                 <input type="email" class="form-control" id="email" name="email"
-                                    placeholder="tu@ejemplo.com" required>
-                                <div class="invalid-feedback">Por favor, ingresa un correo válido para confirmaciones.
-                                </div>
+                                    placeholder="tu@ejemplo.com">
                             </div>
                             <div class="col-12">
                                 <label for="address" class="form-label">Dirección</label>
@@ -267,7 +242,7 @@
                                 <label for="region" class="form-label">Región</label>
                                 <select class="form-select" id="region" name="region" required>
                                     <option value="">Seleccionar...</option>
-                                    <option value="RM" selected>Metropolitana de Santiago</option>
+                                    <option value="RM">Metropolitana de Santiago</option>
                                 </select>
                                 <div class="invalid-feedback">Por favor, selecciona una región válida.</div>
                             </div>
@@ -275,16 +250,14 @@
                                 <label for="comuna" class="form-label">Comuna</label>
                                 <select class="form-select" id="comuna" name="comuna" required>
                                     <option value="">Seleccionar...</option>
-                                    <option value="Puente Alto" selected>Puente Alto</option>
-                                    <option value="Santiago">Santiago</option>
-                                    <option value="Providencia">Providencia</option>
+                                    <option value="Puente Alto">Puente Alto</option>
                                 </select>
                                 <div class="invalid-feedback">Por favor, selecciona una comuna válida.</div>
                             </div>
                             <div class="col-md-3">
-                                <label for="zip" class="form-label">Cód. Postal</label>
-                                <input type="text" class="form-control" id="zip" name="zip" placeholder="" required>
-                                <div class="invalid-feedback">Código postal requerido.</div>
+                                <label for="zip" class="form-label">Cód. Postal <span
+                                        class="text-muted">(Opcional)</span></label>
+                                <input type="text" class="form-control" id="zip" name="zip" placeholder="">
                             </div>
                         </div>
 
@@ -298,23 +271,15 @@
                                 <label class="form-check-label w-100" for="efectivo">Efectivo <small
                                         class="text-muted">(Pago contra entrega)</small></label>
                             </div>
-                            <div class="form-check payment-method-option" data-payment-method="webpay_debito">
-                                <input id="webpay_debito" name="paymentMethod" type="radio" class="form-check-input"
-                                    value="webpay_debito" required>
-                                <label class="form-check-label w-100" for="webpay_debito">
-                                    <img src="https://seeklogo.com/images/W/webpay-logo-295A4CF428-seeklogo.com.png"
-                                        alt="Webpay" height="25" style="vertical-align: middle; margin-right: 7px;">
-                                    Tarjeta de Débito (Webpay)
-                                </label>
+                            <div class="form-check payment-method-option" data-payment-method="debito">
+                                <input id="debito" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="debito" required>
+                                <label class="form-check-label w-100" for="debito">Tarjeta de Débito</label>
                             </div>
-                            <div class="form-check payment-method-option" data-payment-method="webpay_credito">
-                                <input id="webpay_credito" name="paymentMethod" type="radio" class="form-check-input"
-                                    value="webpay_credito" required>
-                                <label class="form-check-label w-100" for="webpay_credito">
-                                    <img src="https://seeklogo.com/images/W/webpay-logo-295A4CF428-seeklogo.com.png"
-                                        alt="Webpay" height="25" style="vertical-align: middle; margin-right: 7px;">
-                                    Tarjeta de Crédito (Webpay)
-                                </label>
+                            <div class="form-check payment-method-option" data-payment-method="credito">
+                                <input id="credito" name="paymentMethod" type="radio" class="form-check-input"
+                                    value="credito" required>
+                                <label class="form-check-label w-100" for="credito">Tarjeta de Crédito</label>
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="transferencia">
                                 <input id="transferencia" name="paymentMethod" type="radio" class="form-check-input"
@@ -323,7 +288,8 @@
                             </div>
                             <div class="form-check payment-method-option" data-payment-method="paypal">
                                 <input id="paypal" name="paymentMethod" type="radio" class="form-check-input"
-                                    value="paypal" required checked> <label class="form-check-label w-100" for="paypal">
+                                    value="paypal" required checked>
+                                <label class="form-check-label w-100" for="paypal">
                                     <img src="https://www.paypalobjects.com/webstatic/mktg/logo/AM_SbyPP_mc_vs_dc_ae.jpg"
                                         alt="PayPal" height="25" style="vertical-align: middle; margin-right: 7px;">
                                     PayPal
@@ -335,34 +301,33 @@
                             <p class="mb-0">Pagarás en efectivo al momento de recibir tu pedido. Por favor, ten el monto
                                 exacto si es posible.</p>
                         </div>
-                        <div id="payment-details-webpay_debito" class="payment-details card card-body bg-light">
-                            <p class="mb-0">Serás redirigido a Webpay para completar tu pago con tarjeta de débito de
-                                forma segura.</p>
+                        <div id="payment-details-debito" class="payment-details card card-body bg-light">
+                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu
+                                tarjeta de débito.</p>
                         </div>
-                        <div id="payment-details-webpay_credito" class="payment-details card card-body bg-light">
-                            <p class="mb-0">Serás redirigido a Webpay para completar tu pago con tarjeta de crédito de
-                                forma segura.</p>
+                        <div id="payment-details-credito" class="payment-details card card-body bg-light">
+                            <p class="mb-0">Serás redirigido a la pasarela de pago seguro para ingresar los datos de tu
+                                tarjeta de crédito.</p>
                         </div>
                         <div id="payment-details-transferencia" class="payment-details card card-body bg-light">
                             <p>Por favor, realiza la transferencia a la siguiente cuenta:</p>
                             <ul class="list-unstyled">
-                                <li><strong>Banco:</strong> Banco Ferremas CL</li>
+                                <li><strong>Banco:</strong> Banco Ferremas</li>
                                 <li><strong>Tipo de Cuenta:</strong> Cuenta Corriente</li>
-                                <li><strong>Número de Cuenta:</strong> 001-2345678-9</li>
-                                <li><strong>RUT:</strong> 76.123.456-K</li>
-                                <li><strong>Nombre:</strong> Ferremas Chile S.A.</li>
-                                <li><strong>Email para comprobante:</strong> pagos@ferremas.cl</li>
+                                <li><strong>Número de Cuenta:</strong> 123-456-7890</li>
+                                <li><strong>RUT:</strong> 77.777.777-7</li>
+                                <li><strong>Nombre:</strong> Ferremas S.A.</li>
+                                <li><strong>Email para comprobante:</strong> pagos@ferremas.com</li>
                             </ul>
-                            <p class="mb-0"><small>Tu pedido será procesado una vez confirmado el pago (puede tardar
-                                    hasta 24 horas hábiles).</small></p>
+                            <p class="mb-0"><small>Tu pedido será procesado una vez confirmado el pago.</small></p>
                         </div>
-                        <div id="payment-details-paypal" class="payment-details card card-body bg-light">
-                            <p class="mb-2 text-center">Completa tu pago de forma segura usando los botones de PayPal.
-                            </p>
-                            <div id="paypal-button-container" class="mx-auto" style="max-width: 400px;">
+                        <div id="payment-details-paypal" class="payment-details card card-body bg-light active">
+                            <p class="mb-2 text-center">Serás redirigido a PayPal para completar tu pago de forma
+                                segura.</p>
+                            <div id="paypal-button-container" class="mx-auto" style="max-width: 350px;">
                             </div>
-                            <p class="mt-2 mb-0 text-center"><small class="text-muted">Al hacer clic en los botones,
-                                    serás llevado al sitio seguro de PayPal.</small></p>
+                            <p class="mt-2 mb-0 text-center"><small class="text-muted">Al hacer clic en los botones de
+                                    PayPal, serás llevado al sitio seguro de PayPal.</small></p>
                         </div>
 
                         <hr class="my-4">
@@ -376,7 +341,7 @@
         </div>
     </main>
 
-    <footer class="footer mt-auto">
+    <footer class="footer">
         <div class="container">
             <p class="mb-1">&copy; {% now "Y" %} Ferremas. Construyendo tus sueños.</p>
             <p class="mb-0">
@@ -387,26 +352,14 @@
         </div>
     </footer>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 
     <script>
-        const API_AUTH_BASE_URL = "{{ api_auth_url_js|default:''|escapejs }}";
-        const API_CRUD_BASE_URL = "{{ api_crud_url_js|default:''|escapejs }}";
-        const PAYPAL_CLIENT_ID = "{{ paypal_client_id|default:''|escapejs }}";
-        const CSRF_TOKEN = "{{ csrf_token|default:''|escapejs }}";
-        const MEDIA_URL = "{{ MEDIA_URL|default:'/media/'|escapejs }}";
-        const IS_EMPLOYEE_PAGE = {% if is_employee_checkout %}true{% else %}false{% endif %};
-        const PROCESAR_PAGO_URL = "{% url 'core:procesar_pago' %}";
-        const PAYPAL_CAPTURE_URL_DJANGO = "{% url 'core:paypal_capture_order' %}";
-        const PRODUCTOS_URL = "{% url 'core:productos' %}";
+        const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}"; 
     </script>
-    <script src="{% static 'js/main.js' %}"></script>
-</body>
+    <script src="{% static 'core/js/main.js' %}"></script>
 </body>
 
 </html>

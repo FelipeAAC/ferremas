@@ -16,7 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
+    'django.contrib.humanize', 
     'core',
 ]
 
@@ -82,22 +82,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'core/static/'),
+    os.path.join(BASE_DIR, 'core/static/core'),
 ]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'core', 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'AYOlbCxD6Gd60gXLsP5SkArDzzM5ZUAeComtgqaKVqj5_MVhv6TeYL2dChy-g8TqxTDsL3wumWLMcnTg')
-PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', 'EBVvvVmJQRlxx4O2TV3BdpaySik2cK2Fl3LNbPtkrEFO4Cci-TM6oNNjRnpZbaJmA_GFQB4wCouD2oum')
-PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'sandbox')
-
-if PAYPAL_MODE == 'sandbox':
-    PAYPAL_API_BASE_URL = 'https://api-m.sandbox.paypal.com'
-else:
-    PAYPAL_API_BASE_URL = 'https://api-m.paypal.com'
-
-API_CRUD_BASE_URL = "http://127.0.0.1:8001"
-API_AUTH_BASE_URL = "http://127.0.0.1:8002"
