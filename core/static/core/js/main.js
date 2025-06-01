@@ -250,6 +250,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const noHistorialPedidosMsg = document.getElementById('no-historial-pedidos');
 
         if (!pedidosEnCursoContainer || !historialPedidosContainer || !noPedidosEnCursoMsg || !noHistorialPedidosMsg) {
+            console.warn("Faltan contenedores para mostrar pedidos.");
             return;
         }
 
@@ -273,19 +274,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!response.ok) {
                 let errorDetail = "Error desconocido.";
-                try { const errorData = JSON.parse(responseText); errorDetail = errorData.detail || errorDetail; }
-                catch (e) { errorDetail = responseText || errorDetail; }
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorDetail = errorData.detail || errorDetail;
+                } catch (e) {
+                    errorDetail = responseText || errorDetail;
+                }
                 throw new Error(`Error ${response.status}: ${errorDetail}`);
             }
 
-            const pedidos = JSON.parse(responseText);
+            let pedidos = [];
+            try {
+                pedidos = JSON.parse(responseText);
+            } catch (e) {
+                console.error("Respuesta de pedidos no es JSON válido:", responseText);
+                throw new Error("No se pudo procesar la respuesta del servidor.");
+            }
+
+            console.log("Pedidos recibidos:", pedidos);
 
             pedidosEnCursoContainer.innerHTML = '';
             historialPedidosContainer.innerHTML = '';
             let hayPedidosEnCurso = false;
             let hayPedidosEnHistorial = false;
 
-            if (!pedidos || pedidos.length === 0) {
+            if (!Array.isArray(pedidos) || pedidos.length === 0) {
                 if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block';
                 if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block';
                 return;
@@ -294,7 +307,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const estadosEnCursoIDs = [1, 2, 3, 4];
 
             pedidos.forEach(pedido => {
-                const esPedidoEnCurso = estadosEnCursoIDs.includes(pedido.id_estado_pedido);
                 const fechaPedidoFormateada = pedido.fecha_pedido ? new Date(pedido.fecha_pedido).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
                 const totalPedidoFormateado = (parseFloat(pedido.total_pedido) || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
                 const estadoDescripcion = pedido.estado_descripcion || 'Desconocido';
@@ -319,42 +331,42 @@ document.addEventListener('DOMContentLoaded', function () {
                     }).join('') : '<li class="list-group-item px-0 text-muted small">No hay detalles.</li>';
 
                 const pedidoCardHTML = `
-                    <div class="card order-card shadow-sm mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="me-2">Pedido #${pedido.id_pedido}</strong>
-                                <small class="text-muted">Fecha: ${fechaPedidoFormateada}</small>
-                            </div>
-                            <span class="badge bg-${esPedidoEnCurso ? 'info text-dark' : 'success'}">${estadoDescripcion}</span>
+                <div class="card order-card shadow-sm mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="me-2">Pedido #${pedido.id_pedido}</strong>
+                            <small class="text-muted">Fecha: ${fechaPedidoFormateada}</small>
                         </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush mb-2">${detallesHTML}</ul>
-                            <div class="text-end fw-bold mt-2 fs-5">Total: ${totalPedidoFormateado}</div>
-                        </div>
-                    </div>`;
+                        <span class="badge bg-${estadosEnCursoIDs.includes(pedido.id_estado_pedido) ? 'info text-dark' : 'success'}">${estadoDescripcion}</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush mb-2">${detallesHTML}</ul>
+                        <div class="text-end fw-bold mt-2 fs-5">Total: ${totalPedidoFormateado}</div>
+                    </div>
+                </div>`;
 
-                if (esPedidoEnCurso) {
-                    if (pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
+                historialPedidosContainer.innerHTML += pedidoCardHTML;
+                hayPedidosEnHistorial = true;
+
+                if (estadosEnCursoIDs.includes(pedido.id_estado_pedido)) {
+                    pedidosEnCursoContainer.innerHTML += pedidoCardHTML;
                     hayPedidosEnCurso = true;
-                } else {
-                    if (historialPedidosContainer) historialPedidosContainer.innerHTML += pedidoCardHTML;
-                    hayPedidosEnHistorial = true;
                 }
             });
 
-            if (hayPedidosEnCurso) { if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none'; }
-            else { if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'block'; }
+            if (hayPedidosEnCurso) { noPedidosEnCursoMsg.style.display = 'none'; }
+            else { noPedidosEnCursoMsg.style.display = 'block'; }
 
-            if (hayPedidosEnHistorial) { if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none'; }
-            else { if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'block'; }
+            if (hayPedidosEnHistorial) { noHistorialPedidosMsg.style.display = 'none'; }
+            else { noHistorialPedidosMsg.style.display = 'block'; }
 
         } catch (error) {
             console.error("Error al procesar pedidos:", error);
             const errorMsg = `<div class="alert alert-warning">Error al cargar pedidos: ${error.message || 'Desconocido.'}</div>`;
-            if (pedidosEnCursoContainer) pedidosEnCursoContainer.innerHTML = errorMsg;
-            if (historialPedidosContainer) historialPedidosContainer.innerHTML = errorMsg;
-            if (noPedidosEnCursoMsg) noPedidosEnCursoMsg.style.display = 'none';
-            if (noHistorialPedidosMsg) noHistorialPedidosMsg.style.display = 'none';
+            pedidosEnCursoContainer.innerHTML = errorMsg;
+            historialPedidosContainer.innerHTML = errorMsg;
+            noPedidosEnCursoMsg.style.display = 'none';
+            noHistorialPedidosMsg.style.display = 'none';
         }
     }
 
@@ -705,17 +717,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalSpan = document.getElementById('checkout-total');
         if (!totalSpan) return;
 
-        // Obtén el total en CLP del DOM (ej: "$12.345")
         const totalCLP = parseInt(totalSpan.textContent.replace(/\D/g, '')) || 0;
 
         try {
             const resp = await fetch('https://mindicador.cl/api/dolar');
             const data = await resp.json();
-            const valorDolar = data.serie[0].valor; // valor actual del dólar
+            const valorDolar = data.serie[0].valor;
 
             const totalUSD = (totalCLP / valorDolar).toFixed(2);
 
-            // Si no existe el span para USD, créalo
             let usdEl = document.getElementById('checkout-total-usd');
             if (!usdEl) {
                 usdEl = document.createElement('div');
@@ -725,7 +735,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             usdEl.innerHTML = `≈ USD $${totalUSD}`;
         } catch (e) {
-            // Si falla, no muestra nada
         }
     }
 

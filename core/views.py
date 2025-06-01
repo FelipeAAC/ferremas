@@ -158,6 +158,7 @@ def login_view(request):
         else:
             context['error'] = "Usuario o contraseña incorrectos"
     return render(request, 'core/login.html', context)
+
 def activar_cuenta_view(request):
     """
     Vista para mostrar el formulario de activación de cuenta.
@@ -167,6 +168,7 @@ def activar_cuenta_view(request):
         'api_auth_url_js': API_AUTH_BASE_URL
     }
     return render(request, 'core/activar_cuenta.html', context)
+
 def index_view(request):
     context = {
         'page_title': 'Bienvenido a Ferremas',
