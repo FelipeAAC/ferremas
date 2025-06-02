@@ -5,9 +5,13 @@
 Este proyecto es la interfaz de usuario (frontend) para el sistema Ferremas, desarrollada con Django. Se encarga de la presentación y la interacción con el usuario, consumiendo datos y servicios de APIs backend:
 
 * Autenticación de usuarios
+* https://github.com/FelipeAAC/Autentificacion-API
 * Gestión de productos y datos (CRUD)
+* https://github.com/FelipeAAC/Pruebas-API
 * Procesamiento de pagos (PayPal)
-* Conversión de moneda (API Banco Central)
+* https://developer.paypal.com/dashboard/
+* Conversión de moneda (API mindicador)
+* https://mindicador.cl/
 
 ## Requisitos Previos
 
