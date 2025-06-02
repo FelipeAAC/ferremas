@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('Pago realizado correctamente por ' + details.payer.name.given_name);
 
                     const cart = getCart();
-                    // Usa ensureUserData para obtener el usuario actualizado
                     const userData = await ensureUserData();
                     let id_cliente = null;
                     if (userData && (userData.id_cliente || userData.id)) {

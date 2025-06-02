@@ -19,4 +19,5 @@ urlpatterns = [
     path('bodega/', views.bodeguero_pedidos_view, name='bodeguero_pedidos'),
     path('registrar-venta/', views.empleado_realizar_compra_view, name='empleado_realizar_compra'),
     path('activar-cuenta/', views.activar_cuenta_view, name='activar_cuenta'),
+    path('contador/', views.contador_pedidos_view, name='contador_pedidos'),
 ]

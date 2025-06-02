@@ -1201,3 +1201,86 @@ def bodeguero_pedidos_view(request):
     }
     return render(request, 'core/bodeguero_pedidos.html', context)
 
+def contador_pedidos_view(request):
+    pedidos_enriquecidos = []
+    todos_los_estados_raw = []
+    contador_estados_permitidos = []
+    api_error_message = None
+    ids_estados_permitidos_contador = [6, 7, 8]
+
+    try:
+        response_estados = requests.get(f"{API_CRUD_BASE_URL}/estados_pedidoget")
+        response_estados.raise_for_status()
+        todos_los_estados_raw = response_estados.json()
+        mapa_estados = {estado['id_estado_pedido']: estado['descripcion'] for estado in todos_los_estados_raw}
+
+        for estado in todos_los_estados_raw:
+            if estado['id_estado_pedido'] in ids_estados_permitidos_contador:
+                contador_estados_permitidos.append(estado)
+        contador_estados_permitidos.sort(key=lambda x: x['id_estado_pedido'])
+
+        response_clientes = requests.get(f"{API_CRUD_BASE_URL}/clientes")
+        response_clientes.raise_for_status()
+        clientes_raw = response_clientes.json()
+        mapa_clientes = {cliente['id_cliente']: f"{cliente.get('p_nombre','')} {cliente.get('p_apellido','')}".strip() for cliente in clientes_raw}
+
+        response_empleados = requests.get(f"{API_CRUD_BASE_URL}/empleadoget")
+        response_empleados.raise_for_status()
+        empleados_raw = response_empleados.json()
+        mapa_empleados = {emp['id_empleado']: f"{emp.get('p_nombre','')} {emp.get('p_apellido','')}".strip() for emp in empleados_raw}
+
+        response_sucursales = requests.get(f"{API_CRUD_BASE_URL}/sucursalget")
+        response_sucursales.raise_for_status()
+        sucursales_raw = response_sucursales.json()
+        mapa_sucursales = {suc['id_sucursal']: suc.get('nombre_sucursal', '') for suc in sucursales_raw}
+
+        response_productos = requests.get(f"{API_CRUD_BASE_URL}/productosget")
+        response_productos.raise_for_status()
+        productos_raw = response_productos.json()
+        mapa_productos = {prod['id_producto']: prod.get('nombre', '') for prod in productos_raw}
+
+        response_pedidos = requests.get(f"{API_CRUD_BASE_URL}/pedidoget")
+        response_pedidos.raise_for_status()
+        pedidos_raw = response_pedidos.json()
+
+        response_detalles = requests.get(f"{API_CRUD_BASE_URL}/detalle_pedidoget")
+        response_detalles.raise_for_status()
+        detalles_raw = response_detalles.json()
+        detalles_por_pedido = {}
+        for det in detalles_raw:
+            det['nombre_producto'] = mapa_productos.get(det['id_producto'], f"ID {det['id_producto']}")
+            detalles_por_pedido.setdefault(det['id_pedido'], []).append(det)
+
+        for pedido in pedidos_raw:
+            pedido_enriquecido = pedido.copy()
+            pedido_enriquecido['estado_descripcion'] = mapa_estados.get(pedido.get('id_estado_pedido'), 'Desconocido')
+            pedido_enriquecido['cliente_nombre'] = mapa_clientes.get(pedido.get('id_cliente'), f"ID: {pedido.get('id_cliente', 'N/A')}")
+            pedido_enriquecido['empleado_nombre'] = mapa_empleados.get(pedido.get('id_empleado_vendedor'), f"ID: {pedido.get('id_empleado_vendedor', 'N/A')}")
+            pedido_enriquecido['sucursal_nombre'] = mapa_sucursales.get(pedido.get('id_sucursal_origen'), f"ID: {pedido.get('id_sucursal_origen', 'N/A')}")
+            pedido_enriquecido['detalles'] = detalles_por_pedido.get(pedido.get('id_pedido'), [])
+            pedidos_enriquecidos.append(pedido_enriquecido)
+
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Error de conexión al API CRUD (Contador): {e}")
+        api_error_message = "No se pudo conectar al servicio de pedidos. Inténtalo más tarde."
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Error HTTP del API CRUD (Contador): {e.response.status_code} - {e.response.text}")
+        error_detail = "Error al obtener datos de la API."
+        try:
+            error_detail = e.response.json().get('detail', error_detail)
+        except Exception:
+            error_detail = e.response.text if e.response.text else error_detail
+        api_error_message = f"Error ({e.response.status_code}) al cargar datos para contador: {error_detail}"
+    except Exception as e:
+        logger.error(f"Error inesperado en vista contador: {e}", exc_info=True)
+        api_error_message = "Ocurrió un error inesperado al preparar la página del contador."
+
+    context = {
+        'page_title': 'Gestión de Pedidos (Contador)',
+        'pedidos': pedidos_enriquecidos,
+        'todos_los_estados': todos_los_estados_raw,
+        'contador_estados_permitidos': contador_estados_permitidos,
+        'api_error_message': api_error_message,
+        'API_CRUD_BASE_URL_for_js': API_CRUD_BASE_URL
+    }
+    return render(request, 'core/contador.html', context)
