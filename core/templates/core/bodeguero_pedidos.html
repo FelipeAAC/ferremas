@@ -1,26 +1,32 @@
 {% extends 'core/basedos.html' %}
 {% load static %}
 {% load humanize %}
+{% load iso_date %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ Bodegas }}{% endblock %}
 
 {% block extra_head %}
 <style>
-    .table th, .table td {
+    .table th,
+    .table td {
         vertical-align: middle;
     }
+
     .status-select {
         min-width: 220px;
     }
+
     .action-cell {
         min-width: 120px;
     }
+
     .toast-container {
         position: fixed;
         top: 1rem;
         right: 1rem;
         z-index: 1090;
     }
+
     .badge {
         font-size: 0.85em;
     }
@@ -34,9 +40,9 @@
     </div>
 
     {% if api_error_message %}
-        <div class="alert alert-danger" role="alert">
-            <strong>Error al cargar datos:</strong> {{ api_error_message }}
-        </div>
+    <div class="alert alert-danger" role="alert">
+        <strong>Error al cargar datos:</strong> {{ api_error_message }}
+    </div>
     {% endif %}
 
     {% if pedidos %}
@@ -66,7 +72,7 @@
                             <td><strong>#{{ pedido.id_pedido }}</strong></td>
                             <td>
                                 {% if pedido.fecha_pedido %}
-                                    {{ pedido.fecha_pedido|date:"d/m/Y H:i" }}
+                                    {{ pedido.fecha_pedido|iso_to_dmy_hm }}
                                 {% else %}
                                     <span class="text-muted">Sin fecha</span>
                                 {% endif %}
@@ -80,20 +86,18 @@
                             </td>
                             <td>
                                 <select class="form-select form-select-sm status-select"
-                                        id="select-estado-{{ pedido.id_pedido }}"
-                                        data-pedido-id="{{ pedido.id_pedido }}"
-                                        data-current-status-id="{{ pedido.id_estado_pedido }}">
+                                    id="select-estado-{{ pedido.id_pedido }}" data-pedido-id="{{ pedido.id_pedido }}"
+                                    data-current-status-id="{{ pedido.id_estado_pedido }}">
                                     {% for estado in bodeguero_estados_permitidos %}
-                                        <option value="{{ estado.id_estado_pedido }}"
-                                            {% if estado.id_estado_pedido == pedido.id_estado_pedido %}selected{% endif %}>
-                                            {{ estado.id_estado_pedido }} - {{ estado.descripcion }}
-                                        </option>
+                                    <option value="{{ estado.id_estado_pedido }}" {% if estado.id_estado_pedido == pedido.id_estado_pedido %}selected{% endif %}>
+                                        {{ estado.id_estado_pedido }} - {{ estado.descripcion }}
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </td>
                             <td class="text-center action-cell">
                                 <button class="btn btn-success btn-sm btn-guardar-estado"
-                                        data-pedido-id="{{ pedido.id_pedido }}">
+                                    data-pedido-id="{{ pedido.id_pedido }}">
                                     <i class="fas fa-save me-1"></i> Guardar
                                 </button>
                             </td>
@@ -105,9 +109,9 @@
         </div>
     </div>
     {% elif not api_error_message %}
-        <div class="alert alert-info text-center" role="alert">
-            No hay pedidos disponibles en este momento.
-        </div>
+    <div class="alert alert-info text-center" role="alert">
+        No hay pedidos disponibles en este momento.
+    </div>
     {% endif %}
 </div>
 
@@ -126,7 +130,7 @@
     }
 
     document.querySelectorAll('.btn-guardar-estado').forEach(button => {
-        button.addEventListener('click', async function() {
+        button.addEventListener('click', async function () {
             const pedidoId = this.dataset.pedidoId;
             const selectElement = document.getElementById(`select-estado-${pedidoId}`);
             const nuevoEstadoId = selectElement.value;
@@ -212,11 +216,11 @@
     function escapeHtmlJS(unsafe) {
         if (unsafe === null || typeof unsafe === 'undefined') return '';
         return String(unsafe)
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 </script>
 {% endblock %}

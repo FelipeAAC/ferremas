@@ -20,15 +20,6 @@ logger = logging.getLogger(__name__)
 API_CRUD_BASE_URL = "http://127.0.0.1:8001"
 API_AUTH_BASE_URL = "http://127.0.0.1:8002"
 
-def is_admin_user(user):
-    return user.is_authenticated and user.is_staff
-
-def is_bodeguero_user(user):
-    return user.is_authenticated and user.groups.filter(name='Bodegueros').exists()
-
-def is_empleado_user(user):
-    return user.is_authenticated and user.groups.filter(name='EmpleadosVentas').exists()
-
 @login_required
 @csrf_exempt
 def paypal_capture_order_view(request):
@@ -123,7 +114,6 @@ def paypal_capture_order_view(request):
 
     logger.warning(f"Método {request.method} no permitido para paypal_capture_order_view.")
     return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
-
 
 @login_required
 def perfil_view(request):
@@ -308,7 +298,6 @@ def realizar_compra_view(request):
     }
     return render(request, 'core/realizar_compra.html', context)
 
-@user_passes_test(is_empleado_user)
 def empleado_realizar_compra_view(request):
     context = {
         'page_title': 'Registrar Venta (Empleado)',
@@ -465,7 +454,6 @@ def compra_exitosa_view(request, numero_orden=None):
     }
     return render(request, 'core/compra_exitosa.html', context)
 
-@user_passes_test(is_admin_user)
 def admin_api_crud_view(request):
     api_entities_list = [
         {
@@ -1142,7 +1130,6 @@ def admin_api_crud_view(request):
     }
     return render(request, 'core/admin_api_crud_index.html', context)
 
-@user_passes_test(is_bodeguero_user)
 def bodeguero_pedidos_view(request):
     pedidos_enriquecidos = []
     todos_los_estados_raw = []
