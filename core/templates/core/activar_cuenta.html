@@ -130,6 +130,8 @@
                         window.location.href = "{% url 'core:empleado_realizar_compra' %}";
                     } else if (rol === "administrador") {
                         window.location.href = "{% url 'core:admin_api_crud' %}";
+                    } else if (rol === "cajero") {
+                        window.location.href = "{% url 'core:contador_pedidos' %}";
                     } else {
                         window.location.href = "{% url 'core:index' %}";
                     }
