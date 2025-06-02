@@ -284,7 +284,7 @@
                     <div class="col d-flex align-items-stretch">
                         <div class="card product-card">
                             <div class="product-card-img-container">
-                                <img src="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}"
+                                <img src="{% if product.imagen_url %}{{ MEDIA_URL }}productos_imagenes/{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}"
                                     class="product-card-img" alt="Imagen de {{ product.name }}"
                                     onerror="this.onerror=null;this.src='{% static 'core/images/placeholder.png' %}'">
                             </div>
@@ -313,7 +313,7 @@
                                 <button class="btn btn-success add-to-cart-btn w-100" data-product-id="{{ product.id }}"
                                     data-product-name="{{ product.name|escapejs }}"
                                     data-product-price="{{ product.price }}"
-                                    data-product-image="{% if product.imagen_url %}{{ MEDIA_URL }}{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}">
+                                    data-product-image="{% if product.imagen_url %}{{ MEDIA_URL }}productos_imagenes/{{ product.imagen_url }}{% else %}{% static 'core/images/placeholder.png' %}{% endif %}">
                                     <i class="fas fa-cart-plus me-2"></i>Añadir al Carrito
                                 </button>
                             </div>

@@ -780,12 +780,22 @@ document.addEventListener('DOMContentLoaded', function () {
             currentSubtotal += itemTotal;
             itemCount++;
 
+            let imgUrl = '/static/core/images/placeholder.png';
+            if (item.image) {
+                imgUrl = item.image;
+            } else if (item.imagen_url) {
+                imgUrl = (typeof MEDIA_URL !== 'undefined' ? MEDIA_URL : '/media/') + 'productos_imagenes/' + item.imagen_url;
+            }
+
             const listItem = document.createElement('li');
             listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'lh-sm');
             listItem.innerHTML = `
-            <div>
-                <h6 class="my-0 text-truncate" style="max-width: 200px;" title="${item.name}">${item.name}</h6>
-                <small class="text-muted">Cantidad: ${itemQuantity}</small>
+            <div class="d-flex align-items-center">
+                <img src="${imgUrl}" class="order-summary-img me-3" alt="Imagen de ${item.name}" onerror="this.onerror=null;this.src='/static/core/images/placeholder.png'">
+                <div>
+                    <h6 class="my-0 text-truncate" style="max-width: 200px;" title="${item.name}">${item.name}</h6>
+                    <small class="text-muted">Cantidad: ${itemQuantity}</small>
+                </div>
             </div>
             <span class="text-muted">$${itemTotal.toLocaleString('es-CL')}</span>
         `;

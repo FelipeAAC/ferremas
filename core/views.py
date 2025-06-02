@@ -397,7 +397,8 @@ def carrito_view(request):
     context = {
         'page_title': 'Tu Carrito de Compras',
         'api_auth_url_js': API_AUTH_BASE_URL,
-        'api_crud_url_js': API_CRUD_BASE_URL
+        'api_crud_url_js': API_CRUD_BASE_URL,
+        'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'core/carrito.html', context)
 

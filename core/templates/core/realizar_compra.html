@@ -362,6 +362,9 @@
     <script>
         const API_AUTH_URL_FROM_DJANGO = "{{ api_auth_url_js|default:''|escapejs }}"; 
     </script>
+    <script>
+        const MEDIA_URL = "{{ MEDIA_URL|default:'/media/'|escapejs }}";
+    </script>
     <script src="{% static 'core/js/main.js' %}"></script>
 </body>
 
